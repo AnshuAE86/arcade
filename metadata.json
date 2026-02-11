@@ -1,0 +1,8 @@
+{
+  "name": "VAIBE Arcade",
+  "description": "A next-generation AI gaming ecosystem for instant-play browser games, featuring creator challenges, brand zones, and World Chain-powered token launches.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
