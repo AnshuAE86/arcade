@@ -147,11 +147,12 @@ export const BRAND_ZONES: BrandZone[] = [
   },
   {
     id: 'b2',
-    name: 'World Chain',
-    logo: 'https://cryptologos.cc/logos/worldcoin-org-wld-logo.png',
-    description: 'Verify your humanity and build on the network of real humans with World Chain.',
-    color: '#FFFFFF',
-    rewardType: 'WLD Tokens',
+    name: 'Telos',
+    // Ring shape: Light blue (top-left) to Purple (bottom-right)
+    logo: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjNjBBNUZBIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjQTg1NUY3Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMzUiIHN0cm9rZT0idXJsKCNnKSIgc3Ryb2tlLXdpZHRoPSIyMCIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==',
+    description: 'Experience the fastest EVM with 15,200+ TPS and no front-running on Telos.',
+    color: '#5E36E8',
+    rewardType: 'TLOS Tokens',
     gamesCount: 15,
     playersCount: '120k'
   }
