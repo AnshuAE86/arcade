@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MOCK_CHALLENGES, BRAND_ZONES } from '../constants';
 import FeaturedCarousel from '../components/FeaturedCarousel';
@@ -10,18 +9,32 @@ import {
   SparklesIcon, 
   ArrowRightIcon, 
   TrophyIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  ChevronRightIcon,
+  UserGroupIcon,
+  BoltIcon,
+  WrenchScrewdriverIcon,
+  UserPlusIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { Game } from '../types';
+import { Game, User } from '../types';
 import { GoogleGenAI } from "@google/genai";
 
-export const Home: React.FC<{ games: Game[] }> = ({ games }) => {
+interface HomeProps {
+  games: Game[];
+  user: User | null;
+  onDemoLogin: (role: 'Player' | 'Creator' | 'Guest') => void;
+}
+
+export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
   const [aiIdea, setAiIdea] = useState<string>("");
   const [isIdeaLoading, setIsIdeaLoading] = useState(false);
 
-  const featured = games.filter(g => g.isFeatured).length > 0 ? games.filter(g => g.isFeatured) : games.slice(0, 3);
-  const trending = [...games].sort((a, b) => b.plays - a.plays).slice(0, 4);
-  const newest = [...games].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 4);
+  const featuredGames = games.filter(g => g.isFeatured);
+  const trending = games.slice(0, 4); // Added trending games
+  const recentlyPlayedGames = user 
+    ? user.recentlyPlayed.map(id => games.find(g => g.id === id)).filter(Boolean) as Game[]
+    : [];
 
   const generateIdea = async () => {
     setIsIdeaLoading(true);
@@ -45,8 +58,64 @@ export const Home: React.FC<{ games: Game[] }> = ({ games }) => {
   }, []);
 
   return (
-    <div className="space-y-12">
-      <FeaturedCarousel games={featured} />
+    <div className="p-8 space-y-12">
+      {/* Demo Mode Welcome Banner */}
+      {!user && (
+        <div className="bg-gradient-to-r from-cyan-600/20 via-indigo-600/20 to-fuchsia-600/20 border border-cyan-500/30 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="flex-grow text-center md:text-left">
+            <h2 className="text-2xl font-black font-orbitron text-white mb-2">WELCOME TO ARCADE DEMO</h2>
+            <p className="text-slate-400 max-w-xl">
+              Registration is currently in development. Use the buttons below to instantly explore the arcade as a player or a creator.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4">
+            <button 
+              onClick={() => onDemoLogin('Player')}
+              className="px-8 py-4 bg-cyan-500 text-slate-950 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-500/20 flex items-center gap-3"
+            >
+              <UserPlusIcon className="w-6 h-6" /> TEST AS PLAYER
+            </button>
+            <button 
+              onClick={() => onDemoLogin('Creator')}
+              className="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3"
+            >
+              <WrenchScrewdriverIcon className="w-6 h-6" /> TEST AS CREATOR
+            </button>
+          </div>
+        </div>
+      )}
+
+      <FeaturedCarousel games={featuredGames} />
+
+      {/* Continue Playing Section */}
+      {user && recentlyPlayedGames.length > 0 && (
+        <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-xl text-cyan-400">
+                <ArrowPathIcon className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-black font-orbitron tracking-tight uppercase">Continue Playing</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            {recentlyPlayedGames.map(game => (
+              <Link 
+                key={game.id} 
+                to={`/game/${game.id}`}
+                className="group relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-800 hover:border-cyan-500/50 transition-all shadow-lg"
+              >
+                <img src={game.thumbnail} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={game.title} />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-[10px] font-black text-white uppercase truncate">{game.title}</p>
+                  <p className="text-[8px] text-slate-400 font-bold uppercase">{game.genre}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="bg-gradient-to-r from-cyan-900/20 to-transparent p-6 rounded-3xl border border-cyan-500/10 flex flex-col md:flex-row items-center gap-6">
         <div className="bg-cyan-500/10 p-4 rounded-2xl border border-cyan-500/20">

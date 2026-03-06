@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { GameGenre, Game } from '../types';
 import GameCard from '../components/GameCard';
 import AdUnit from '../components/AdUnit';
@@ -18,13 +18,34 @@ interface CatalogProps {
 }
 
 export const Catalog: React.FC<CatalogProps> = ({ games }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const genreParam = searchParams.get('genre');
+
   const [activeGenre, setActiveGenre] = useState<GameGenre | 'All'>('All');
   const [sortBy, setSortBy] = useState<'Popular' | 'Newest' | 'Rating'>('Popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [minRating, setMinRating] = useState(0);
 
+  useEffect(() => {
+    if (genreParam) {
+      setActiveGenre(genreParam as GameGenre);
+    } else {
+      setActiveGenre('All');
+    }
+  }, [genreParam]);
+
   const genres = ['All', ...Object.values(GameGenre)];
+
+  const handleGenreChange = (genre: GameGenre | 'All') => {
+    setActiveGenre(genre);
+    if (genre === 'All') {
+      searchParams.delete('genre');
+    } else {
+      searchParams.set('genre', genre);
+    }
+    setSearchParams(searchParams);
+  };
 
   const filteredGames = games
     .filter(g => (activeGenre === 'All' || g.genre === activeGenre))
@@ -140,7 +161,7 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
         {genres.slice(0, 8).map(genre => (
           <button 
             key={genre}
-            onClick={() => setActiveGenre(genre as any)}
+            onClick={() => handleGenreChange(genre as any)}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
               activeGenre === genre 
               ? 'bg-cyan-500 text-slate-950 border-cyan-400' 

@@ -1,0 +1,270 @@
+import React, { useState } from 'react';
+import { MOCK_RAFFLES, MOCK_USER } from '../constants';
+import { Raffle, User } from '../types';
+import { 
+  TicketIcon, 
+  ClockIcon, 
+  TrophyIcon, 
+  InformationCircleIcon,
+  SparklesIcon,
+  ShoppingBagIcon,
+  CheckCircleIcon
+} from '@heroicons/react/24/outline';
+
+interface RafflesProps {
+  user: User;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+}
+
+export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
+  const [activeRaffles, setActiveRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [lastEnteredRaffle, setLastEnteredRaffle] = useState<string>('');
+  const [isConfettiActive, setIsConfettiActive] = useState(false);
+  const [activeTab, setActiveTab] = useState<'raffles' | 'shop'>('raffles');
+
+  const shopItems = [
+    { id: 's1', title: 'Ad-Free Pass', description: 'Remove all ads from the arcade for 30 days.', cost: 500, icon: SparklesIcon, category: 'Feature' },
+    { id: 's2', title: 'Premium Game Key', description: 'Unlock a random premium game for your library.', cost: 1000, icon: TicketIcon, category: 'Game' },
+    { id: 's3', title: 'Extra Spin Ticket', description: 'Get 1 immediate extra spin on the Daily Wheel.', cost: 50, icon: ShoppingBagIcon, category: 'Utility' },
+    { id: 's4', title: 'Raffle Multiplier', description: 'Your next raffle entry counts as double.', cost: 200, icon: TrophyIcon, category: 'Boost' }
+  ];
+
+  const handleEnterRaffle = (raffle: Raffle) => {
+    if (user.arcadeCoins >= raffle.cost) {
+      setUser(prev => prev ? ({
+        ...prev,
+        arcadeCoins: prev.arcadeCoins - raffle.cost
+      }) : null);
+      
+      setActiveRaffles(prev => prev.map(r => 
+        r.id === raffle.id 
+          ? { ...r, entries: r.entries + 1 } 
+          : r
+      ));
+
+      setLastEnteredRaffle(raffle.title);
+      setShowConfirmation(true);
+      setIsConfettiActive(true);
+      setTimeout(() => setIsConfettiActive(false), 3000);
+    }
+  };
+
+  const handleBuyShopItem = (item: typeof shopItems[0]) => {
+    if (user.arcadeCoins >= item.cost) {
+      setUser(prev => prev ? ({
+        ...prev,
+        arcadeCoins: prev.arcadeCoins - item.cost,
+        isPremium: item.id === 's1' ? true : prev.isPremium
+      }) : null);
+      
+      setLastEnteredRaffle(item.title);
+      setShowConfirmation(true);
+      setIsConfettiActive(true);
+      setTimeout(() => setIsConfettiActive(false), 3000);
+    }
+  };
+
+  const calculateDaysLeft = (endDate: string) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const diff = end.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
+  };
+
+  return (
+    <div className="p-8 relative overflow-hidden">
+      {/* Confetti Effect */}
+      {isConfettiActive && (
+        <div className="fixed inset-0 pointer-events-none z-[100]">
+          {[...Array(50)].map((_, i) => (
+            <div 
+              key={i}
+              className="absolute w-2 h-2 rounded-full animate-ping"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#22d3ee', '#6366f1', '#d946ef', '#fbbf24'][Math.floor(Math.random() * 4)],
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${Math.random() * 3 + 1}s`
+              }}
+            ></div>
+          ))}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircleIcon className="w-12 h-12" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2 font-orbitron">{activeTab === 'raffles' ? 'ENTRY SUCCESSFUL!' : 'PURCHASE SUCCESSFUL!'}</h3>
+            <p className="text-slate-400 mb-8">{activeTab === 'raffles' ? `You have successfully entered the ${lastEnteredRaffle} raffle. Good luck!` : `You have successfully purchased: ${lastEnteredRaffle}`}</p>
+            <button 
+              onClick={() => setShowConfirmation(false)}
+              className="w-full py-4 bg-cyan-500 text-slate-950 font-black rounded-2xl hover:bg-cyan-400 transition-colors"
+            >
+              AWESOME
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold font-orbitron text-white mb-2 uppercase">ARCADE {activeTab}</h1>
+          <p className="text-slate-400">Spend Arcade Coins to {activeTab === 'raffles' ? 'win prizes' : 'unlock features'}.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800">
+            <button 
+              onClick={() => setActiveTab('raffles')}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'raffles' ? 'bg-cyan-500 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
+            >
+              Raffles
+            </button>
+            <button 
+              onClick={() => setActiveTab('shop')}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'shop' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+            >
+              Coin Shop
+            </button>
+          </div>
+          <div className="flex items-center gap-3 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+            <TicketIcon className="w-6 h-6 text-cyan-400" />
+            <div>
+              <p className="text-xs text-slate-400 uppercase font-bold">Arcade Coins</p>
+              <p className="text-xl font-bold text-white">{user.arcadeCoins}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {activeTab === 'raffles' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {activeRaffles.map(raffle => {
+            const daysLeft = calculateDaysLeft(raffle.endDate);
+            const canAfford = user.arcadeCoins >= raffle.cost;
+
+            return (
+              <div key={raffle.id} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 overflow-hidden flex flex-col md:flex-row hover:border-cyan-500/50 transition-all group">
+                <div className="md:w-1/3 relative h-48 md:h-auto">
+                  <img 
+                    src={raffle.image} 
+                    alt={raffle.title} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-lg border border-slate-700 flex items-center gap-2">
+                    <ClockIcon className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white uppercase">{daysLeft} Days Left</span>
+                  </div>
+                </div>
+
+                <div className="md:w-2/3 p-6 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <h2 className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors uppercase font-orbitron">
+                      {raffle.title}
+                    </h2>
+                    <div className="p-2 bg-slate-700/50 rounded-lg text-yellow-400">
+                      <TrophyIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+                  
+                  <p className="text-slate-400 text-sm mb-6 flex-grow">
+                    {raffle.description}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                      <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Total Entries</p>
+                      <p className="text-lg font-bold text-white">{raffle.entries}</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                      <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Odds of Winning</p>
+                      <p className="text-lg font-bold text-cyan-400">{raffle.entries > 0 ? `1 in ${raffle.entries + 1}` : '100%'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 mt-auto">
+                    <div className="flex-grow">
+                      <p className="text-[10px] text-slate-500 font-black uppercase">Cost Per Entry</p>
+                      <div className="flex items-center gap-1">
+                        <SparklesIcon className="w-4 h-4 text-yellow-400" />
+                        <span className="text-xl font-black text-white">{raffle.cost}</span>
+                        <span className="text-xs font-bold text-slate-500">COINS</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleEnterRaffle(raffle)}
+                      disabled={!canAfford}
+                      className={`px-8 py-3 rounded-2xl font-black text-sm uppercase transition-all flex items-center gap-2 ${
+                        canAfford 
+                          ? 'bg-gradient-to-r from-cyan-500 to-indigo-500 text-white hover:scale-105 shadow-lg shadow-cyan-500/20'
+                          : 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600'
+                      }`}
+                    >
+                      <ShoppingBagIcon className="w-5 h-5" />
+                      ENTER NOW
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {shopItems.map(item => (
+            <div key={item.id} className="bg-slate-800/40 rounded-3xl p-6 border border-slate-700/50 hover:border-indigo-500/50 transition-all flex flex-col group">
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-4 bg-indigo-500/10 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform">
+                  <item.icon className="w-8 h-8" />
+                </div>
+                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-500/10 px-3 py-1 rounded-full">
+                  {item.category}
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 uppercase font-orbitron">{item.title}</h3>
+              <p className="text-sm text-slate-400 mb-8 flex-grow">{item.description}</p>
+              
+              <button 
+                onClick={() => handleBuyShopItem(item)}
+                disabled={user.arcadeCoins < item.cost}
+                className={`w-full py-4 rounded-2xl font-black text-sm uppercase transition-all flex items-center justify-center gap-2 ${
+                  user.arcadeCoins >= item.cost
+                    ? 'bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:scale-105 shadow-lg shadow-indigo-500/20'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                <SparklesIcon className="w-4 h-4" />
+                {item.cost} COINS
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-12 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-6">
+        <div className="p-4 bg-indigo-500/20 rounded-2xl text-indigo-400">
+          <InformationCircleIcon className="w-12 h-12" />
+        </div>
+        <div className="flex-grow text-center md:text-left">
+          <h3 className="text-xl font-bold text-white mb-2 uppercase font-orbitron">How Raffles Work</h3>
+          <p className="text-slate-400 text-sm max-w-2xl">
+            Each ticket you purchase gives you one chance to win. Winners are drawn automatically when the timer expires. 
+            All prizes are digital and will be delivered to your account email within 24 hours of winning.
+          </p>
+        </div>
+        <button className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-colors whitespace-nowrap">
+          VIEW TERMS
+        </button>
+      </div>
+    </div>
+  );
+};
+
+

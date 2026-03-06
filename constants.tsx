@@ -7,13 +7,13 @@ export const MOCK_GAMES: Game[] = [
     title: 'Neon Drift 3000',
     description: 'A high-speed car drifting through a futuristic neon cyberpunk cityscape.',
     thumbnail: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.RACING,
+    genre: GameGenre.CAR,
     plays: 125000,
     weeklyPlays: 12000,
     rating: 4.8,
     creator: 'CyberGhost',
     iframeUrl: 'https://www.crazygames.com/embed/polytrack',
-    tags: ['3D', 'Fast', 'Synthwave'],
+    tags: ['Car', 'Fast', '3D'],
     createdAt: '2024-01-15',
     isFeatured: true
   },
@@ -28,7 +28,7 @@ export const MOCK_GAMES: Game[] = [
     rating: 4.5,
     creator: 'MetaPixel',
     iframeUrl: 'https://www.crazygames.com/embed/ovo',
-    tags: ['Hard', 'Space', 'Speedrun'],
+    tags: ['Action', 'Space', 'Hard'],
     createdAt: '2024-01-10',
     isFeatured: true
   },
@@ -36,14 +36,14 @@ export const MOCK_GAMES: Game[] = [
     id: '3',
     title: 'Zen Garden Puzzle',
     description: 'A relaxing tile-matching puzzle game set in a beautiful, serene Japanese garden.',
-    thumbnail: 'https://images.unsplash.com/photo-1517594422361-5eeb8ae275a9?auto=format&fit=crop&q=80&w=800',
+    thumbnail: 'https://images.unsplash.com/photo-1598902108854-10e335adac99?auto=format&fit=crop&q=80&w=800',
     genre: GameGenre.PUZZLE,
     plays: 45000,
     weeklyPlays: 890,
     rating: 4.9,
     creator: 'NatureCoder',
     iframeUrl: 'https://www.crazygames.com/embed/mahjongg-solitaire',
-    tags: ['Relaxing', 'Garden', 'Strategy'],
+    tags: ['Puzzle', 'Garden', 'Relaxing'],
     createdAt: '2024-01-12'
   },
   {
@@ -57,7 +57,7 @@ export const MOCK_GAMES: Game[] = [
     rating: 4.7,
     creator: 'RetroKing',
     iframeUrl: 'https://www.crazygames.com/embed/bloxdhop-io',
-    tags: ['Multiplayer', 'Combat', 'Retro'],
+    tags: ['Action', 'Retro', 'Combat'],
     createdAt: '2024-01-05'
   },
   {
@@ -65,13 +65,13 @@ export const MOCK_GAMES: Game[] = [
     title: 'AI Architect',
     description: 'A robot-driven city builder where you manage automated systems and growth.',
     thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.STRATEGY,
+    genre: GameGenre.THINKING,
     plays: 32000,
     weeklyPlays: 1200,
     rating: 4.2,
     creator: 'SimMaster',
     iframeUrl: 'https://www.crazygames.com/embed/idlescape',
-    tags: ['Building', 'Robot', 'AI'],
+    tags: ['Thinking', 'Building', 'Robot'],
     createdAt: '2024-01-20'
   }
 ];
@@ -83,10 +83,74 @@ export const MOCK_USER: User = {
   role: 'Creator',
   walletAddress: '0x71C...9A21',
   vibeTokens: 1250,
+  arcadeCoins: 500, // Premium currency
   gamesPlayed: 45,
   gamesCreated: 3,
   challengePoints: 450,
-  library: ['1', '3']
+  library: ['1', '3'],
+  questProgress: {
+    'd1': 1,
+    'd2': 2,
+    'w1': 5
+  },
+  completedQuests: [],
+  isPremium: false,
+  referralCode: 'VIBE-ALEX',
+  referralCount: 12,
+  exp: 1540,
+  recentlyPlayed: ['2', '4']
+};
+
+export const MOCK_QUESTS: Quest[] = [
+  { id: 'd1', title: 'Daily Check-in', description: 'Log in to the arcade today.', reward: 10, type: 'daily', target: 1, category: 'check-in' },
+  { id: 'd2', title: 'Game Master', description: 'Play 5 games in one day.', reward: 50, type: 'daily', target: 5, category: 'play-games' },
+  { id: 'd3', title: 'Time Traveler', description: 'Play for 30 minutes.', reward: 30, type: 'daily', target: 30, category: 'play-time' },
+  { id: 'd4', title: 'Lucky Spinner', description: 'Spin the wheel of fortune.', reward: 10, type: 'daily', target: 1, category: 'spin-wheel' },
+  { id: 'd5', title: 'Ad Enthusiast', description: 'Watch 3 short ads.', reward: 20, type: 'daily', target: 3, category: 'watch-ads' },
+  { id: 'w1', title: 'Weekly Warrior', description: 'Play 25 games in a week.', reward: 200, type: 'weekly', target: 25, category: 'play-games' },
+  { id: 'w2', title: 'Dedicated Gamer', description: 'Play for 200 minutes in a week.', reward: 150, type: 'weekly', target: 200, category: 'play-time' },
+  { id: 's1', title: 'Twitter Supporter', description: 'Follow us on Twitter/X.', reward: 100, type: 'special', target: 1, category: 'social' },
+  { id: 's2', title: 'Refer a Friend', description: 'Invite a friend to join the arcade.', reward: 500, type: 'special', target: 1, category: 'referral' }
+];
+
+export const MOCK_RAFFLES: Raffle[] = [
+  { 
+    id: 'r1', 
+    title: 'Steam Gift Card $20', 
+    description: 'Win a $20 Steam Gift Card to buy your favorite games!', 
+    prize: '$20 Steam Gift Card', 
+    cost: 50, 
+    entries: 145, 
+    endDate: '2024-04-01', 
+    image: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?auto=format&fit=crop&q=80&w=800' 
+  },
+  { 
+    id: 'r2', 
+    title: 'Game Key: Elden Ring', 
+    description: 'Win a Steam key for the critically acclaimed Elden Ring.', 
+    prize: 'Elden Ring Steam Key', 
+    cost: 100, 
+    entries: 890, 
+    endDate: '2024-04-15', 
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=800' 
+  }
+];
+
+export const MOCK_ANALYTICS: AnalyticsData = {
+  totalPlays: 1250430,
+  uniquePlayers: 85200,
+  avgSessionTime: 18.5,
+  completionRate: 72.4,
+  replayRate: 45.8,
+  returningUsers: 62.5,
+  day1ReturnRate: 38.2,
+  day7ReturnRate: 15.6,
+  demographics: {
+    age: { '13-17': 25, '18-24': 40, '25-34': 20, '35+': 15 },
+    gender: { 'Male': 58, 'Female': 39, 'Other': 3 },
+    countries: { 'USA': 30, 'India': 15, 'Brazil': 10, 'UK': 8, 'Others': 37 },
+    devices: { mobile: 65, desktop: 35 }
+  }
 };
 
 export const MOCK_LEADERS: Partial<User>[] = [

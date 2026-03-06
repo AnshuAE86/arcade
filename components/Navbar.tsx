@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
 import { 
@@ -19,6 +18,11 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Helper for dynamic level display
+  const calculateLevel = (totalExp: number) => {
+    return Math.floor((-7 + Math.sqrt(81 + totalExp / 12.5)) / 2);
+  };
 
   const notifications = [
     { id: 1, text: "New challenge live: Sweatcoin Move-to-Game Jam!", type: "challenge", time: "2h ago" },
@@ -106,7 +110,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
               <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
                 <Link to="/profile" className="text-right hidden sm:block hover:opacity-80 transition-opacity">
                   <p className="text-sm font-semibold">{user.name}</p>
-                  <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Level 7</p>
+                  <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Level {calculateLevel(user.exp)}</p>
                 </Link>
                 <Link to="/profile">
                   <img 
@@ -126,7 +130,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
             </>
           ) : (
             <Link to="/login" className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-cyan-500/20">
-              Launch Arcade
+              Sign up now
             </Link>
           )}
         </div>

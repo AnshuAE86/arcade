@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { Home, GamePlay, Catalog, Profile, Challenges, CreatorZone, Login, Launch, Zones, Leaderboards } from './pages';
+import { MemoryRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Home, GamePlay, Catalog, Profile, Challenges, CreatorZone, Login, Launch, Zones, Leaderboards, Quests, Raffles, Dashboard } from './pages';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
-import { MOCK_USER, MOCK_GAMES } from './constants';
-import { User, Game } from './types';
+import Chat from './components/Chat';
+import { MOCK_USER, MOCK_GAMES, MOCK_QUESTS } from './constants';
+import { User, Game, Quest } from './types';
 import { createClient } from '@supabase/supabase-js';
 
 // Secure initialization: Use placeholders if env vars are missing to prevent crash
@@ -30,10 +30,18 @@ const App: React.FC = () => {
     role: 'Creator', 
     email: sbUser.email,
     vibeTokens: 1250,
+    arcadeCoins: 500,
     gamesPlayed: 45,
     gamesCreated: 3,
     challengePoints: 450,
-    library: ['1', '3']
+    library: ['1', '3'],
+    questProgress: {},
+    completedQuests: [],
+    isPremium: false,
+    referralCode: `ARC-${sbUser.id.substring(0, 5).toUpperCase()}`,
+    referralCount: 0,
+    exp: 100,
+    recentlyPlayed: []
   });
 
   useEffect(() => {
@@ -79,6 +87,34 @@ const App: React.FC = () => {
     if (user) setUser({ ...user, ...updatedUser });
   };
 
+  const handleDemoLogin = (role: 'Player' | 'Creator' | 'Guest') => {
+    if (role === 'Guest') {
+      setUser(null);
+    } else {
+      setUser({
+        ...MOCK_USER,
+        id: `demo-${role.toLowerCase()}`,
+        name: `Demo ${role}`,
+        role: role as 'Player' | 'Creator',
+        arcadeCoins: 1000,
+        vibeTokens: 2500,
+        isPremium: role === 'Creator',
+        referralCode: role === 'Creator' ? 'CREATOR-DEMO' : 'PLAYER-DEMO',
+        referralCount: 5,
+        exp: 1250,
+        recentlyPlayed: ['1', '2']
+      });
+    }
+  };
+
+  const addToRecentlyPlayed = (gameId: string) => {
+    if (!user) return;
+    const current = user.recentlyPlayed || [];
+    const filtered = current.filter(id => id !== gameId);
+    const updated = [gameId, ...filtered].slice(0, 7);
+    setUser({ ...user, recentlyPlayed: updated });
+  };
+
   const addGame = (newGame: Game) => setGames(prev => [newGame, ...prev]);
 
   const toggleLibraryGame = (gameId: string) => {
@@ -90,68 +126,111 @@ const App: React.FC = () => {
     setUser({ ...user, library: newLibrary });
   };
 
-  const rewardUser = (amount: number) => {
+  const rewardUser = (amount: number, type: 'vibe' | 'arcade' = 'vibe') => {
     if (user) {
       setUser({
         ...user,
-        vibeTokens: user.vibeTokens + amount,
+        vibeTokens: type === 'vibe' ? user.vibeTokens + amount : user.vibeTokens,
+        arcadeCoins: type === 'arcade' ? user.arcadeCoins + amount : user.arcadeCoins,
         gamesPlayed: user.gamesPlayed + 1
       });
     }
   };
 
+  const updateQuestProgress = (category: Quest['category'], amount: number) => {
+    if (!user) return;
+
+    const updatedProgress = { ...user.questProgress };
+    let changed = false;
+
+    MOCK_QUESTS.forEach(quest => {
+      if (quest.category === category && !user.completedQuests.includes(quest.id)) {
+        const currentProgress = updatedProgress[quest.id] || 0;
+        if (currentProgress < quest.target) {
+          updatedProgress[quest.id] = Math.min(currentProgress + amount, quest.target);
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) {
+      setUser({ ...user, questProgress: updatedProgress });
+    }
+  };
+
+  // Guard for registered users
+  const ProtectedRoute = ({ children, requireCreator = false }: { children: React.ReactNode, requireCreator?: boolean }) => {
+    if (!user) return <Login onLogin={setUser} />;
+    if (requireCreator && user.role !== 'Creator') {
+      return (
+        <div className="p-20 text-center">
+          <h1 className="text-2xl font-bold text-white mb-4 uppercase font-orbitron">Access Denied</h1>
+          <p className="text-slate-400">Only creators can access the data dashboard.</p>
+          <Link to="/" className="inline-block mt-8 px-6 py-3 bg-cyan-500 text-slate-950 font-bold rounded-xl">Go Home</Link>
+        </div>
+      );
+    }
+    return <>{children}</>;
+  };
+
   return (
     <Router>
-      <div className="flex min-h-screen bg-slate-950 text-slate-100">
-        {!user ? (
-          <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex min-h-screen bg-slate-950 text-slate-100 font-inter">
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          toggle={() => setSidebarOpen(!isSidebarOpen)} 
+          user={user}
+          onDemoLogin={handleDemoLogin}
+        />
+        
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-64' : ''}`}>
+          <Navbar user={user} onLogout={handleLogout} />
+          
+          <main className="flex-1 overflow-y-auto">
             <Routes>
-              <Route path="*" element={<Login onLogin={setUser} />} />
+              <Route path="/" element={<Home games={games} user={user} onDemoLogin={handleDemoLogin} />} />
+              <Route path="/catalog" element={<Catalog games={games} />} />
+              <Route path="/leaderboards" element={<Leaderboards games={games} />} />
+              <Route path="/zones" element={<Zones />} />
+              <Route path="/challenges" element={
+                <ProtectedRoute requireCreator>
+                  <Challenges />
+                </ProtectedRoute>
+              } />
+              <Route path="/launch" element={
+                <ProtectedRoute requireCreator>
+                  <Launch user={user} games={games} />
+                </ProtectedRoute>
+              } />
+              <Route path="/creator-zone" element={<CreatorZone user={user} />} />
+              
+              <Route path="/quests" element={
+                <Quests user={user} setUser={setUser} />
+              } />
+              
+              <Route path="/raffles" element={
+                <ProtectedRoute>
+                  <Raffles user={user} setUser={setUser} />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/dashboard" element={
+                <ProtectedRoute requireCreator>
+                  <Dashboard user={user} games={games} />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile user={user} games={games} onUpdateProfile={handleUpdateProfile} />
+                </ProtectedRoute>
+              } />
+              <Route path="/game/:id" element={<GamePlay user={user} rewardUser={rewardUser} updateQuestProgress={updateQuestProgress} toggleLibrary={toggleLibraryGame} games={games} userLibrary={user?.library || []} onToggleLibrary={toggleLibraryGame} onLaunch={(id) => addToRecentlyPlayed(id)} />} />
+              <Route path="/login" element={<Login onLogin={setUser} />} />
             </Routes>
-          </div>
-        ) : (
-          <>
-            <Sidebar isOpen={isSidebarOpen} toggle={() => setSidebarOpen(!isSidebarOpen)} />
-            <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
-              <Navbar user={user} onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} onLogout={handleLogout} />
-              <main className="flex-1 p-4 md:p-8">
-                <Routes>
-                  <Route path="/" element={<Home games={games} />} />
-                  <Route path="/game/:id" element={
-                    <GamePlay 
-                      games={games} 
-                      onPlayComplete={rewardUser} 
-                      userLibrary={user.library}
-                      onToggleLibrary={toggleLibraryGame}
-                    />
-                  } />
-                  <Route path="/catalog" element={<Catalog games={games} />} />
-                  <Route path="/profile" element={<Profile user={user} games={games} onUpdateProfile={handleUpdateProfile} />} />
-                  <Route path="/challenges" element={<Challenges />} />
-                  <Route path="/leaderboards" element={<Leaderboards games={games} />} />
-                  <Route path="/creator-zone" element={<CreatorZone user={user} onUpload={addGame} />} />
-                  <Route path="/launch" element={<Launch user={user} games={games} />} />
-                  <Route path="/zones" element={<Zones />} />
-                </Routes>
-              </main>
-              <footer className="border-t border-slate-800 p-8 mt-auto">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold font-orbitron tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">
-                      ARCADE
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-8 text-slate-400 text-sm">
-                    <button onClick={() => alert("Privacy Policy")} className="hover:text-cyan-400 transition-colors">Privacy Policy</button>
-                    <button onClick={() => alert("Terms of Service")} className="hover:text-cyan-400 transition-colors">Terms of Service</button>
-                    <button onClick={() => alert("Dev Portal")} className="hover:text-cyan-400 transition-colors">Developer Portal</button>
-                  </div>
-                  <p className="text-slate-500 text-sm">© 2024 Arcade Ecosystem. All rights reserved.</p>
-                </div>
-              </footer>
-            </div>
-          </>
-        )}
+          </main>
+        </div>
+        {user && <Chat />}
       </div>
     </Router>
   );

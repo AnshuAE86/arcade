@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Game } from '../types';
+import { Game, User } from '../types';
 import AdUnit from '../components/AdUnit';
 import { 
   ArrowsPointingOutIcon, 
@@ -17,13 +16,16 @@ import { StarIcon, BookmarkIcon as BookmarkSolid } from '@heroicons/react/24/sol
 import GameCard from '../components/GameCard';
 
 interface GamePlayProps {
+  user: User | null;
   games: Game[];
   onPlayComplete: (amount: number) => void;
+  updateQuestProgress?: (category: string, amount: number) => void;
   userLibrary: string[];
   onToggleLibrary: (id: string) => void;
+  onLaunch?: (gameId: string) => void;
 }
 
-export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, userLibrary, onToggleLibrary }) => {
+export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updateQuestProgress, userLibrary, onToggleLibrary, onLaunch }) => {
   const { id } = useParams<{ id: string }>();
   const [game, setGame] = useState<Game | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -34,12 +36,28 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, userL
     const found = games.find(g => g.id === id);
     if (found) {
       setGame(found);
-      setTimeout(() => {
+      
+      // Tracking games played
+      if (updateQuestProgress) {
+        updateQuestProgress('play-games', 1);
+      }
+
+      if (onLaunch) {
+        onLaunch(found.id);
+      }
+
+      // Tracking play time (simulated after 5 seconds for demo)
+      const timer = setTimeout(() => {
         onPlayComplete(10);
+        if (updateQuestProgress) {
+          updateQuestProgress('play-time', 1); // 1 minute/unit
+        }
       }, 5000);
+
+      return () => clearTimeout(timer);
     }
     window.scrollTo(0, 0);
-  }, [id, games]);
+  }, [id, games, updateQuestProgress]);
 
   if (!game) return <div className="p-20 text-center">Loading game...</div>;
 

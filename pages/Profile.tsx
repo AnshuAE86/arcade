@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { User, Game } from '../types';
 import GameCard from '../components/GameCard';
@@ -39,6 +38,20 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
 
   const myGames = games.filter(g => g.creator === user.name || g.creator === 'CyberGhost');
   const libraryGames = games.filter(g => user.library.includes(g.id));
+
+  // Dynamic EXP Calculation
+  // Level 1: 0-500, Level 2: 501-1100, Level 3: 1101-1800...
+  // Requirement(L) = 500 + (L-1)*100
+  const getLevelInfo = (totalExp: number) => {
+    // Inverse of T(L) = 50L^2 + 350L - 400
+    const level = Math.floor((-7 + Math.sqrt(81 + totalExp / 12.5)) / 2);
+    const totalExpToCurrentLevel = 50 * (level - 1) * (level + 8);
+    const expIntoLevel = totalExp - totalExpToCurrentLevel;
+    const expRequiredForNext = 500 + (level - 1) * 100;
+    return { level, expIntoLevel, expRequiredForNext };
+  };
+
+  const { level, expIntoLevel, expRequiredForNext } = getLevelInfo(user.exp);
 
   const handleSave = () => {
     onUpdateProfile({ name: editName, role: editRole, avatar: editAvatar });
@@ -125,41 +138,63 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
             ) : (
               <>
                 <div className="flex flex-col md:flex-row md:items-center gap-4 mb-2">
-                  <h1 className="text-4xl font-black font-orbitron tracking-tight">{user.name}</h1>
-                  <span className="inline-block px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] font-black uppercase border border-cyan-500/20 self-center md:self-auto">
-                    {user.role}
-                  </span>
+                  <h1 className="text-4xl font-black font-orbitron tracking-tighter uppercase">{user.name}</h1>
+                  {user.isPremium && (
+                    <div className="bg-gradient-to-r from-yellow-400 to-amber-600 p-[1px] rounded-lg">
+                      <div className="bg-slate-950 px-2 py-0.5 rounded-[7px] flex items-center gap-1">
+                        <SparklesIcon className="w-3 h-3 text-yellow-400" />
+                        <span className="text-[10px] font-black text-yellow-400 uppercase">PRO</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <p className="text-slate-400 max-w-xl line-clamp-2 mb-4">
+                <p className="text-slate-400 max-w-xl line-clamp-2 mb-6">
                   Building the future of decentralized gaming. Always experimenting with new mechanics and AI integrations. Arcade Genesis Creator.
                 </p>
+                
+                {/* EXP Progress Bar */}
+                <div className="max-w-md mb-6">
+                  <div className="flex justify-between items-end mb-2">
+                    <div className="flex items-center gap-2">
+                      <BoltIcon className="w-5 h-5 text-cyan-400" />
+                      <span className="text-xs font-black text-slate-300 uppercase tracking-widest">Level {level}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500">{expIntoLevel} / {expRequiredForNext} XP</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-900 rounded-full border border-slate-800 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 transition-all duration-1000"
+                      style={{ width: `${(expIntoLevel / expRequiredForNext) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
               </>
             )}
             
-            <div className="flex flex-wrap justify-center md:justify-start gap-6 items-center">
-              {user.walletAddress && (
-                <div className="flex items-center gap-2 text-slate-400 text-sm font-medium bg-slate-900/50 px-3 py-1 rounded-lg border border-slate-800">
-                  <WalletIcon className="w-4 h-4" />
-                  {user.walletAddress}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-slate-400 font-medium">
+              <h1 className="text-3xl md:text-4xl font-black font-orbitron tracking-tighter uppercase">{user.name}</h1>
+              {user.isPremium && (
+                <div className="bg-gradient-to-r from-yellow-400 to-amber-600 p-[1px] rounded-lg">
+                  <div className="bg-slate-950 px-2 py-0.5 rounded-[7px] flex items-center gap-1">
+                    <SparklesIcon className="w-3 h-3 text-yellow-400" />
+                    <span className="text-[10px] font-black text-yellow-400 uppercase">PRO</span>
+                  </div>
                 </div>
               )}
-              
-              {/* EXP Bar Replacement */}
-              <div className="flex flex-col gap-1 w-full max-w-[240px]">
-                <div className="flex justify-between items-end">
-                  <div className="flex items-center gap-1.5">
-                    <BoltIcon className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">LEVEL 7</span>
-                  </div>
-                  <span className="text-[9px] font-bold text-slate-500">1,250 / 2,000 EXP</span>
-                </div>
-                <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800 p-[1px]">
-                  <div 
-                    className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(34,211,238,0.3)]" 
-                    style={{ width: '62.5%' }}
-                  ></div>
-                </div>
-              </div>
+              <span className="flex items-center gap-1.5"><UserIcon className="w-4 h-4 text-indigo-400" /> {user.role}</span>
+              <span className="flex items-center gap-1.5"><BoltIcon className="w-4 h-4 text-cyan-400" /> Level {level}</span>
+              <span className="flex items-center gap-1.5 font-bold text-slate-300">
+                Code: <span className="text-cyan-400">{user.referralCode}</span>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(user.referralCode);
+                    alert('Referral code copied!');
+                  }}
+                  className="p-1 hover:text-white transition-colors"
+                >
+                  <ShareIcon className="w-3.5 h-3.5" />
+                </button>
+              </span>
             </div>
           </div>
 

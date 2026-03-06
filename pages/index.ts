@@ -9,3 +9,6 @@ export * from './Login';
 export * from './Launch';
 export * from './Zones';
 export * from './Leaderboards';
+export * from './Quests';
+export * from './Raffles';
+export * from './Dashboard';

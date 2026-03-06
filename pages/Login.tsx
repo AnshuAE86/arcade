@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User } from '../types';
 import { 
@@ -102,6 +101,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     navigator.clipboard.writeText(text);
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  const loginAsMockUser = (role: 'Player' | 'Creator') => {
+    onLogin({
+      ...MOCK_USER,
+      role: role,
+      name: role === 'Creator' ? 'Mock Creator' : 'Mock Player',
+      id: role === 'Creator' ? 'mock-creator' : 'mock-player'
+    });
   };
 
   return (
@@ -238,6 +246,29 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <UserIcon className="w-4 h-4 text-cyan-400" />
                   Demo Mode
                 </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 mb-8">
+                <button 
+                  onClick={() => loginAsMockUser('Player')}
+                  className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all border border-slate-700 flex items-center justify-center gap-3 group"
+                >
+                  <UserIcon className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                  Log in as Registered Player
+                </button>
+                <button 
+                  onClick={() => loginAsMockUser('Creator')}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-3 group"
+                >
+                  <WrenchIcon className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
+                  Log in as Game Creator
+                </button>
+              </div>
+
+              <div className="relative flex items-center gap-4 mb-8">
+                <div className="flex-1 h-px bg-slate-800"></div>
+                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Or Magic Link</span>
+                <div className="flex-1 h-px bg-slate-800"></div>
               </div>
             </form>
           )}
