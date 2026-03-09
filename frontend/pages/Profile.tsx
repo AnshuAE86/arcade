@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { User, Game } from '../types';
 import GameCard from '../components/GameCard';
-import { 
-  PencilIcon, 
-  ShareIcon, 
+import {
+  PencilIcon,
+  ShareIcon,
   WalletIcon,
   ChartBarIcon,
   SparklesIcon,
@@ -34,24 +34,43 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
   const [editRole, setEditRole] = useState<'Player' | 'Creator'>(user?.role || 'Player');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '');
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.id) {
+        try {
+          const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+          const response = await fetch(`${BACKEND_URL}/users/${user.id}`);
+          if (response.ok) {
+            const latestUser = await response.json();
+            onUpdateProfile(latestUser);
+          }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user?.id]);
+
   if (!user) return <div className="p-20 text-center">Please login to view profile.</div>;
 
   const myGames = games.filter(g => g.creator === user.name || g.creator === 'CyberGhost');
-  const libraryGames = games.filter(g => user.library.includes(g.id));
+  const libraryGames = games.filter(g => user.library?.includes(g.id) || false);
 
   // Dynamic EXP Calculation
   // Level 1: 0-500, Level 2: 501-1100, Level 3: 1101-1800...
   // Requirement(L) = 500 + (L-1)*100
-  const getLevelInfo = (totalExp: number) => {
+  const getLevelInfo = (totalExp: number = 0) => {
     // Inverse of T(L) = 50L^2 + 350L - 400
-    const level = Math.floor((-7 + Math.sqrt(81 + totalExp / 12.5)) / 2);
+    const level = Math.floor((-7 + Math.sqrt(81 + totalExp / 12.5)) / 2) || 1;
     const totalExpToCurrentLevel = 50 * (level - 1) * (level + 8);
     const expIntoLevel = totalExp - totalExpToCurrentLevel;
     const expRequiredForNext = 500 + (level - 1) * 100;
     return { level, expIntoLevel, expRequiredForNext };
   };
 
-  const { level, expIntoLevel, expRequiredForNext } = getLevelInfo(user.exp);
+  const { level, expIntoLevel, expRequiredForNext } = getLevelInfo(user.exp || 0);
 
   const handleSave = () => {
     onUpdateProfile({ name: editName, role: editRole, avatar: editAvatar });
@@ -82,11 +101,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
         <div className="h-48 md:h-64 rounded-[40px] bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 overflow-hidden border border-slate-800">
           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
         </div>
-        
+
         <div className="px-8 flex flex-col md:flex-row items-end gap-6 -mt-16 relative z-10">
           <div className="relative group" onClick={triggerFileInput}>
-            <img 
-              src={isEditing ? editAvatar : user.avatar} 
+            <img
+              src={isEditing ? editAvatar : user.avatar}
               alt={user.name}
               className={`w-32 h-32 md:w-44 md:h-44 rounded-[32px] bg-slate-900 border-4 border-slate-950 shadow-2xl transition-all object-cover ${isEditing ? 'cursor-pointer hover:brightness-75' : ''}`}
             />
@@ -96,15 +115,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                 <span className="text-white text-[10px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity mt-1">Change Avatar</span>
               </div>
             )}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleAvatarChange} 
-              className="hidden" 
-              accept="image/*" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              className="hidden"
+              accept="image/*"
             />
           </div>
-          
+
           <div className="flex-1 pb-4 text-center md:text-left">
             {isEditing ? (
               <div className="space-y-4 max-w-md bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl mb-4">
@@ -112,8 +131,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Username</label>
                   <div className="relative">
                     <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-cyan-500 outline-none"
@@ -124,7 +143,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Profile Type</label>
                   <div className="flex gap-2">
                     {['Player', 'Creator'].map((r) => (
-                      <button 
+                      <button
                         key={r}
                         onClick={() => setEditRole(r as any)}
                         className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${editRole === r ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400' : 'bg-slate-950 border-slate-800 text-slate-500'}`}
@@ -151,7 +170,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                 <p className="text-slate-400 max-w-xl line-clamp-2 mb-6">
                   Building the future of decentralized gaming. Always experimenting with new mechanics and AI integrations. Arcade Genesis Creator.
                 </p>
-                
+
                 {/* EXP Progress Bar */}
                 <div className="max-w-md mb-6">
                   <div className="flex justify-between items-end mb-2">
@@ -162,7 +181,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                     <span className="text-[10px] font-bold text-slate-500">{expIntoLevel} / {expRequiredForNext} XP</span>
                   </div>
                   <div className="w-full h-2 bg-slate-900 rounded-full border border-slate-800 overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 transition-all duration-1000"
                       style={{ width: `${(expIntoLevel / expRequiredForNext) * 100}%` }}
                     ></div>
@@ -170,7 +189,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                 </div>
               </>
             )}
-            
+
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-slate-400 font-medium">
               <h1 className="text-3xl md:text-4xl font-black font-orbitron tracking-tighter uppercase">{user.name}</h1>
               {user.isPremium && (
@@ -185,7 +204,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
               <span className="flex items-center gap-1.5"><BoltIcon className="w-4 h-4 text-cyan-400" /> Level {level}</span>
               <span className="flex items-center gap-1.5 font-bold text-slate-300">
                 Code: <span className="text-cyan-400">{user.referralCode}</span>
-                <button 
+                <button
                   onClick={() => {
                     navigator.clipboard.writeText(user.referralCode);
                     alert('Referral code copied!');
@@ -201,14 +220,14 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
           <div className="flex gap-2 pb-4">
             {isEditing ? (
               <>
-                <button 
+                <button
                   onClick={() => setIsEditing(false)}
                   className="flex items-center gap-2 px-6 py-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all font-bold text-sm text-slate-400"
                 >
                   <XMarkIcon className="w-4 h-4" />
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleSave}
                   className="flex items-center gap-2 px-6 py-3 bg-cyan-500 text-slate-950 rounded-xl hover:bg-cyan-400 transition-all font-black text-sm shadow-lg shadow-cyan-500/20"
                 >
@@ -221,7 +240,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                 <button className="p-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all text-slate-300">
                   <ShareIcon className="w-5 h-5" />
                 </button>
-                <button 
+                <button
                   onClick={() => setIsEditing(true)}
                   className="flex items-center gap-2 px-6 py-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all font-bold text-sm"
                 >
@@ -254,14 +273,13 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
       <div className="space-y-8">
         <div className="flex border-b border-slate-800 gap-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
           {(['My Games', 'Library', 'Collections', 'Analytics'] as Tab[]).map(tab => (
-            <button 
+            <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 text-sm font-black uppercase tracking-widest transition-all border-b-2 ${
-                activeTab === tab 
-                  ? 'text-cyan-400 border-cyan-400' 
-                  : 'text-slate-500 border-transparent hover:text-slate-300'
-              }`}
+              className={`pb-4 text-sm font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === tab
+                ? 'text-cyan-400 border-cyan-400'
+                : 'text-slate-500 border-transparent hover:text-slate-300'
+                }`}
             >
               {tab}
             </button>
@@ -274,7 +292,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
               {myGames.map(game => (
                 <GameCard key={game.id} game={game} />
               ))}
-              <div 
+              <div
                 onClick={() => navigate('/creator-zone')}
                 className="rounded-2xl border-2 border-dashed border-slate-800 flex flex-col items-center justify-center p-8 space-y-4 hover:border-cyan-500/50 transition-all group cursor-pointer"
               >
@@ -305,15 +323,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
           )}
 
           {activeTab === 'Collections' && (
-             <div className="col-span-full py-20 text-center text-slate-500 font-bold uppercase tracking-widest">
-               Feature coming soon!
-             </div>
+            <div className="col-span-full py-20 text-center text-slate-500 font-bold uppercase tracking-widest">
+              Feature coming soon!
+            </div>
           )}
 
           {activeTab === 'Analytics' && (
-             <div className="col-span-full py-20 text-center text-slate-500 font-bold uppercase tracking-widest">
-               Detailed creator analytics are available for verified accounts.
-             </div>
+            <div className="col-span-full py-20 text-center text-slate-500 font-bold uppercase tracking-widest">
+              Detailed creator analytics are available for verified accounts.
+            </div>
           )}
         </div>
       </div>

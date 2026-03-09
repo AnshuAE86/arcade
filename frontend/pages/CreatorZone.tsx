@@ -93,7 +93,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     if (!assetPrompts[type]) return;
     setLoadingAsset(type);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       // We use the image model to generate a sprite
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -125,7 +125,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     if (!pitch) return;
     setIsLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Generate arcade game metadata for this idea: ${pitch}. Be creative and name it something unique.`,
@@ -165,7 +165,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     setForgeStatus("Initializing Neural Forge...");
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       
       // 1. Generate Metadata
       setForgeStatus("Synthesizing Concept...");
@@ -297,7 +297,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
       if (assets.enemy) codeContext = codeContext.split(assets.enemy).join('__ENEMY_ASSET__');
       if (assets.background) codeContext = codeContext.split(assets.background).join('__BG_ASSET__');
 
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `
@@ -346,7 +346,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     if (!title) return;
     setIsImgLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
@@ -394,7 +394,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-pro-preview",
         contents: `Create a detailed technical game logic specification for this experimental mechanic: ${betaPrompt}. Include core variables, player actions, and win/loss conditions. Format as a clean technical doc.`,

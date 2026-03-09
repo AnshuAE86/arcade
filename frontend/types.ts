@@ -38,22 +38,22 @@ export interface User {
   role: 'Player' | 'Creator';
   walletAddress?: string;
   email?: string;
-  vibeTokens: number; // Regular currency
-  arcadeCoins: number; // Premium currency (non-token)
-  gamesPlayed: number;
-  gamesCreated: number;
-  challengePoints: number; 
-  library: string[]; 
+  vibeTokens?: number; // Regular currency
+  arcadeCoins?: number; // Premium currency (non-token)
+  gamesPlayed?: number;
+  gamesCreated?: number;
+  challengePoints?: number;
+  library?: string[];
   lastSpinDate?: string;
-  questProgress: {
+  questProgress?: {
     [questId: string]: number; // current value
   };
-  completedQuests: string[];
-  isPremium: boolean;
+  completedQuests?: string[];
+  isPremium?: boolean;
   referralCode: string;
-  referralCount: number;
-  exp: number;
-  recentlyPlayed: string[]; // Last 7 game IDs
+  referralCount?: number;
+  exp?: number;
+  recentlyPlayed?: string[]; // Last 7 game IDs
 }
 
 export interface Quest {

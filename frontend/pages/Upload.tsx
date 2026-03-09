@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { User, GameGenre, Game } from '../types';
-import { 
-  CloudArrowUpIcon, 
+import {
+  CloudArrowUpIcon,
   InformationCircleIcon,
   LinkIcon,
   PhotoIcon,
@@ -33,7 +33,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
     if (!pitch) return;
     setIsLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: `Generate arcade game metadata for this idea: ${pitch}`,
@@ -51,7 +51,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
           }
         }
       });
-      
+
       const data = JSON.parse(response.text || "{}");
       setTitle(data.title || "");
       setDescription(data.description || "");
@@ -71,7 +71,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
     if (!title) return;
     setIsImgLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
@@ -81,7 +81,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
           imageConfig: { aspectRatio: "16:9" }
         }
       });
-      
+
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           setThumbnail(`data:image/png;base64,${part.inlineData.data}`);
@@ -101,7 +101,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
       alert("Please fill in at least the title and generate a thumbnail.");
       return;
     }
-    
+
     // Fix: Added missing weeklyPlays property to satisfy the Game interface requirement.
     const newGame: Game = {
       id: Math.random().toString(36).substring(7),
@@ -151,16 +151,16 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
           <h2 className="text-xl font-black font-orbitron">AI SPARK ENGINE</h2>
         </div>
         <p className="text-sm text-slate-400">Enter your game concept and let VAIBE generate assets.</p>
-        
+
         <div className="flex flex-col gap-4">
-          <textarea 
+          <textarea
             value={pitch}
             onChange={(e) => setPitch(e.target.value)}
             placeholder="Describe your game idea... e.g. 'A neon racer with synthwave music.'"
             className="w-full bg-slate-950 border border-slate-800 rounded-xl py-4 px-6 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all resize-none min-h-[120px]"
           />
           <div className="flex flex-col sm:flex-row gap-4">
-            <button 
+            <button
               type="button"
               onClick={generateMetadata}
               disabled={isLoading || !pitch}
@@ -169,7 +169,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
               {isLoading ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <SparklesIcon className="w-5 h-5" />}
               GENERATE METADATA
             </button>
-            <button 
+            <button
               type="button"
               onClick={generateThumbnail}
               disabled={isImgLoading || !title}
@@ -187,16 +187,16 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-300">Game Title</label>
-              <input 
+              <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                type="text" 
+                type="text"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all"
               />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-300">Description</label>
-              <textarea 
+              <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
@@ -206,7 +206,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-300">Genre</label>
-                <select 
+                <select
                   value={genre}
                   onChange={(e) => setGenre(e.target.value as GameGenre)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-2 focus:ring-cyan-500/20 transition-all"
@@ -216,10 +216,10 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-300">Tags</label>
-                <input 
+                <input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  type="text" 
+                  type="text"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                 />
               </div>
@@ -239,7 +239,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={handleSubmit}
             className="w-full py-4 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-black rounded-2xl shadow-xl shadow-cyan-500/20 transition-all flex items-center justify-center gap-2"
           >

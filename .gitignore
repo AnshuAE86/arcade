@@ -1,5 +1,9 @@
-# Dependencies
-node_modules/
+# Environments
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .venv/
 env/
 venv/
@@ -17,6 +21,12 @@ __pycache__/
 *$py.class
 .pytest_cache/
 .python-version
+*.db
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
 
 # IDEs
 .vscode/

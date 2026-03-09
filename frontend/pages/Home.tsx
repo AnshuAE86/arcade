@@ -4,10 +4,10 @@ import FeaturedCarousel from '../components/FeaturedCarousel';
 import GameCard from '../components/GameCard';
 import AdUnit from '../components/AdUnit';
 import { Link } from 'react-router-dom';
-import { 
-  FireIcon, 
-  SparklesIcon, 
-  ArrowRightIcon, 
+import {
+  FireIcon,
+  SparklesIcon,
+  ArrowRightIcon,
   TrophyIcon,
   LightBulbIcon,
   ChevronRightIcon,
@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Game, User } from '../types';
 import { GoogleGenAI } from "@google/genai";
+import { supabase } from '../App';
 
 interface HomeProps {
   games: Game[];
@@ -30,16 +31,30 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
   const [aiIdea, setAiIdea] = useState<string>("");
   const [isIdeaLoading, setIsIdeaLoading] = useState(false);
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("Google login failed:", error);
+    }
+  };
+
   const featuredGames = games.filter(g => g.isFeatured);
   const trending = games.slice(0, 4); // Added trending games
-  const recentlyPlayedGames = user 
-    ? user.recentlyPlayed.map(id => games.find(g => g.id === id)).filter(Boolean) as Game[]
+  const recentlyPlayedGames = user
+    ? (user.recentlyPlayed || []).map(id => games.find(g => g.id === id)).filter(Boolean) as Game[]
     : [];
 
   const generateIdea = async () => {
     setIsIdeaLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: "Give me one short, creative, and viral-potential game idea for a browser arcade platform. Max 20 words.",
@@ -63,24 +78,33 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
       {!user && (
         <div className="bg-gradient-to-r from-cyan-600/20 via-indigo-600/20 to-fuchsia-600/20 border border-cyan-500/30 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
           <div className="flex-grow text-center md:text-left">
-            <h2 className="text-2xl font-black font-orbitron text-white mb-2">WELCOME TO ARCADE DEMO</h2>
+            <h2 className="text-2xl font-black font-orbitron text-white mb-2">WELCOME TO VAIBE ARCADE</h2>
             <p className="text-slate-400 max-w-xl">
-              Registration is currently in development. Use the buttons below to instantly explore the arcade as a player or a creator.
+              Sign in with Google to save your progress, earn rewards, and compete on the global leaderboards.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
-            <button 
-              onClick={() => onDemoLogin('Player')}
-              className="px-8 py-4 bg-cyan-500 text-slate-950 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-500/20 flex items-center gap-3"
+            <button
+              onClick={handleGoogleLogin}
+              className="px-8 py-4 bg-white text-slate-950 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 flex items-center gap-3 uppercase tracking-widest text-xs"
             >
-              <UserPlusIcon className="w-6 h-6" /> TEST AS PLAYER
+              <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="" />
+              Sign in with Google
             </button>
-            <button 
-              onClick={() => onDemoLogin('Creator')}
-              className="px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3"
-            >
-              <WrenchScrewdriverIcon className="w-6 h-6" /> TEST AS CREATOR
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onDemoLogin('Player')}
+                className="px-4 py-4 bg-slate-800/50 text-slate-300 font-bold rounded-2xl hover:bg-slate-700 transition-all flex items-center gap-2 text-[10px] uppercase tracking-wider"
+              >
+                <UserPlusIcon className="w-4 h-4" /> Try Player Demo
+              </button>
+              <button
+                onClick={() => onDemoLogin('Creator')}
+                className="px-4 py-4 bg-slate-800/50 text-slate-300 font-bold rounded-2xl hover:bg-slate-700 transition-all flex items-center gap-2 text-[10px] uppercase tracking-wider"
+              >
+                <WrenchScrewdriverIcon className="w-4 h-4" /> Try Creator Demo
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -100,8 +124,8 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {recentlyPlayedGames.map(game => (
-              <Link 
-                key={game.id} 
+              <Link
+                key={game.id}
                 to={`/game/${game.id}`}
                 className="group relative aspect-[4/5] rounded-2xl overflow-hidden border border-slate-800 hover:border-cyan-500/50 transition-all shadow-lg"
               >
@@ -125,7 +149,7 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
           <h3 className="text-sm font-black text-cyan-400 uppercase tracking-widest mb-1">Neural Inspiration Engine</h3>
           <p className="text-slate-300 italic">"{isIdeaLoading ? "Querying neural forge..." : aiIdea}"</p>
         </div>
-        <button 
+        <button
           onClick={generateIdea}
           disabled={isIdeaLoading}
           className="px-6 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all disabled:opacity-50 uppercase tracking-widest"
@@ -169,7 +193,7 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
           </div>
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             {BRAND_ZONES.map(zone => (
-              <Link 
+              <Link
                 key={zone.id}
                 to="/zones"
                 className="p-6 rounded-2xl border border-slate-700/50 hover:border-slate-500 transition-all cursor-pointer bg-slate-900/50 block"
@@ -196,8 +220,8 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {MOCK_CHALLENGES.filter(c => c.status === 'active').map(challenge => (
-            <Link 
-              key={challenge.id} 
+            <Link
+              key={challenge.id}
               to="/challenges"
               className="group relative h-64 rounded-3xl overflow-hidden border border-slate-800 hover:border-yellow-500/50 transition-all"
             >

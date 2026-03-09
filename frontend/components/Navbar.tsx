@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
-import { 
-  Bars3Icon, 
-  MagnifyingGlassIcon, 
+import {
+  Bars3Icon,
+  MagnifyingGlassIcon,
   BellIcon,
   ArrowRightOnRectangleIcon,
   XMarkIcon
@@ -20,8 +20,8 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
   const notificationRef = useRef<HTMLDivElement>(null);
 
   // Helper for dynamic level display
-  const calculateLevel = (totalExp: number) => {
-    return Math.floor((-7 + Math.sqrt(81 + totalExp / 12.5)) / 2);
+  const calculateLevel = (totalExp: number = 0) => {
+    return Math.floor((-7 + Math.sqrt(81 + totalExp / 12.5)) / 2) || 1;
   };
 
   const notifications = [
@@ -44,7 +44,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
     <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
       <div className="px-4 h-16 flex items-center justify-between gap-4">
         {user && (
-          <button 
+          <button
             onClick={onToggleSidebar}
             className="p-2 text-slate-400 hover:text-slate-100 lg:hidden"
           >
@@ -61,8 +61,8 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
         <div className="flex-1 max-w-xl hidden md:block">
           <div className="relative group">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search games, creators, challenges..."
               className="w-full bg-slate-900/50 border border-slate-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/20 focus:border-cyan-400/50 transition-all"
             />
@@ -76,7 +76,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
 
               {/* Notifications Dropdown */}
               <div className="relative" ref={notificationRef}>
-                <button 
+                <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className={`p-2 transition-colors relative ${showNotifications ? 'text-cyan-400' : 'text-slate-400 hover:text-slate-100'}`}
                 >
@@ -110,16 +110,16 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
               <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
                 <Link to="/profile" className="text-right hidden sm:block hover:opacity-80 transition-opacity">
                   <p className="text-sm font-semibold">{user.name}</p>
-                  <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Level {calculateLevel(user.exp)}</p>
+                  <p className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Level {calculateLevel(user.exp || 0)}</p>
                 </Link>
                 <Link to="/profile">
-                  <img 
-                    src={user.avatar} 
+                  <img
+                    src={user.avatar}
                     alt={user.name}
                     className="w-10 h-10 rounded-xl border border-slate-700 bg-slate-800 object-cover"
                   />
                 </Link>
-                <button 
+                <button
                   onClick={onLogout}
                   className="p-2 text-slate-500 hover:text-red-400 transition-colors"
                   title="Logout"

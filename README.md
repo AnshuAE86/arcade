@@ -20,7 +20,11 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
 pip install -r requirements.txt
-uvicorn main:app --reload
+
+# Setup .env file with your Supabase credentials
+# cp .env.example .env
+
+uvicorn app.main:app --reload
 ```
 
 ## Deployment

@@ -3,10 +3,10 @@ import { MOCK_QUESTS, MOCK_USER } from '../constants';
 import { Quest, User } from '../types';
 import SpinWheel from '../components/SpinWheel';
 import { Link } from 'react-router-dom';
-import { 
-  CheckCircleIcon, 
-  CalendarIcon, 
-  SparklesIcon, 
+import {
+  CheckCircleIcon,
+  CalendarIcon,
+  SparklesIcon,
   GiftIcon,
   UserGroupIcon,
   ShareIcon,
@@ -33,10 +33,10 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
           </div>
           <h1 className="text-4xl md:text-5xl font-black font-orbitron text-white mb-6 tracking-tighter uppercase">Unlock Your Potential</h1>
           <p className="text-xl text-slate-400 mb-10 leading-relaxed">
-            Join the VAIBE Arcade today and start earning <span className="text-cyan-400 font-bold">Arcade Coins</span> for every game you play. 
+            Join the VAIBE Arcade today and start earning <span className="text-cyan-400 font-bold">Arcade Coins</span> for every game you play.
             Complete daily missions, climb the hall of fame, and win real prizes in our exclusive raffles.
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left">
             {([
               { title: "Daily Rewards", desc: "Get coins just for checking in and playing your favorite games.", icon: CalendarIcon },
@@ -52,7 +52,7 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
+            <Link
               to="/login"
               className="px-10 py-5 bg-cyan-500 text-slate-950 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-500/20 uppercase tracking-widest"
             >
@@ -68,7 +68,7 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
   const filteredQuests = MOCK_QUESTS.filter(q => q.type === activeTab);
 
   const getProgress = (quest: Quest) => {
-    return user.questProgress[quest.id] || 0;
+    return user.questProgress?.[quest.id] || 0;
   };
 
   const isCompleted = (quest: Quest) => {
@@ -76,15 +76,15 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
   };
 
   const isClaimed = (quest: Quest) => {
-    return user.completedQuests.includes(quest.id);
+    return (user.completedQuests || []).includes(quest.id);
   };
 
   const handleClaim = (quest: Quest) => {
     if (isCompleted(quest) && !isClaimed(quest)) {
       setUser(prev => prev ? ({
         ...prev,
-        arcadeCoins: prev.arcadeCoins + quest.reward,
-        completedQuests: [...prev.completedQuests, quest.id]
+        arcadeCoins: (prev.arcadeCoins || 0) + quest.reward,
+        completedQuests: [...(prev.completedQuests || []), quest.id]
       }) : null);
     }
   };
@@ -127,11 +127,10 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-2 rounded-xl font-bold transition-all ${
-              activeTab === tab 
-                ? 'bg-cyan-500 text-slate-900' 
+            className={`px-6 py-2 rounded-xl font-bold transition-all ${activeTab === tab
+                ? 'bg-cyan-500 text-slate-900'
                 : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             {tab.toUpperCase()}
           </button>
@@ -166,7 +165,7 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
                   <span className="text-cyan-400">{progress} / {quest.target}</span>
                 </div>
                 <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-1000"
                     style={{ width: `${percent}%` }}
                   ></div>
@@ -176,13 +175,12 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
               <button
                 disabled={!completed || claimed}
                 onClick={() => handleClaim(quest)}
-                className={`w-full py-3 rounded-xl font-bold transition-all ${
-                  claimed 
+                className={`w-full py-3 rounded-xl font-bold transition-all ${claimed
                     ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    : completed 
+                    : completed
                       ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-900 hover:scale-[1.02] shadow-lg shadow-yellow-500/20'
                       : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {claimed ? 'CLAIMED' : completed ? 'CLAIM REWARD' : 'IN PROGRESS'}
               </button>

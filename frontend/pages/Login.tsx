@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { 
-  BoltIcon, 
-  EnvelopeIcon, 
-  ExclamationCircleIcon, 
-  UserIcon, 
+import {
+  BoltIcon,
+  EnvelopeIcon,
+  ExclamationCircleIcon,
+  UserIcon,
   ArrowPathIcon,
   PaperAirplaneIcon,
   InboxIcon,
@@ -33,7 +33,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [showDebug, setShowDebug] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [debugTab, setDebugTab] = useState<'magic' | 'google'>('magic');
-  
+
   const [customRedirectUrl, setCustomRedirectUrl] = useState<string>("");
 
   const getDetectedOrigin = () => {
@@ -52,7 +52,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setIsLoading(true);
     setError(null);
     setStatus('sending');
-    
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -153,7 +153,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <h3 className="text-xl font-bold text-white">Access Link Dispatched</h3>
                 <p className="text-sm text-slate-400">Link sent to <span className="text-cyan-400 font-bold">{email}</span></p>
               </div>
-              
+
               <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800 text-left space-y-3">
                 <div className="flex items-start gap-3">
                   <InboxIcon className="w-5 h-5 text-slate-500 shrink-0" />
@@ -164,14 +164,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </div>
 
               <div className="flex flex-col gap-3">
-                <button 
+                <button
                   onClick={() => setShowDebug(true)}
                   className="flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                 >
                   <WrenchIcon className="w-4 h-4" />
                   Stuck? Connection Helper
                 </button>
-                <button 
+                <button
                   onClick={() => setStatus('idle')}
                   className="text-xs font-black text-slate-600 hover:text-cyan-400 uppercase tracking-widest transition-colors"
                 >
@@ -185,8 +185,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Universal Entry</label>
                 <div className="relative">
                   <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -196,7 +196,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
               </div>
 
-              <button 
+              <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full py-4 bg-cyan-500 text-slate-950 font-black rounded-2xl hover:bg-cyan-400 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center text-xs uppercase tracking-widest shadow-lg shadow-cyan-500/20 group"
@@ -212,14 +212,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </button>
 
               <div className="pt-4 flex justify-center">
-                 <button 
+                <button
                   type="button"
                   onClick={() => setShowDebug(true)}
                   className="flex items-center gap-2 text-[9px] font-black text-slate-700 hover:text-cyan-400 uppercase tracking-widest transition-colors"
-                 >
-                   <QuestionMarkCircleIcon className="w-4 h-4" />
-                   Connection Troubleshooter
-                 </button>
+                >
+                  <QuestionMarkCircleIcon className="w-4 h-4" />
+                  Connection Troubleshooter
+                </button>
               </div>
 
               <div className="relative py-4">
@@ -229,34 +229,34 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button 
+              <div className="flex flex-col gap-3">
+                <button
                   type="button"
                   onClick={() => handleSocialLogin('google')}
-                  className="flex items-center justify-center gap-2 py-3 bg-slate-950 border border-slate-800 text-slate-500 font-bold rounded-2xl hover:bg-slate-800 hover:text-white transition-all text-[10px] uppercase active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-white text-slate-900 font-black rounded-2xl hover:bg-slate-100 transition-all text-xs uppercase tracking-[0.1em] active:scale-[0.98] shadow-xl shadow-white/5"
                 >
-                  <img src="https://www.google.com/favicon.ico" className="w-3 h-3 grayscale group-hover:grayscale-0" alt="G" />
-                  Google
+                  <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="" />
+                  Continue with Google
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => onLogin(MOCK_USER)}
                   className="flex items-center justify-center gap-2 py-3 bg-slate-950 border border-slate-800 text-slate-500 font-bold rounded-2xl hover:bg-slate-800 hover:text-white transition-all text-[10px] uppercase active:scale-[0.98]"
                 >
                   <UserIcon className="w-4 h-4 text-cyan-400" />
-                  Demo Mode
+                  Try Demo Mode
                 </button>
               </div>
 
               <div className="grid grid-cols-1 gap-4 mb-8">
-                <button 
+                <button
                   onClick={() => loginAsMockUser('Player')}
                   className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all border border-slate-700 flex items-center justify-center gap-3 group"
                 >
                   <UserIcon className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
                   Log in as Registered Player
                 </button>
-                <button 
+                <button
                   onClick={() => loginAsMockUser('Creator')}
                   className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-3 group"
                 >
@@ -286,13 +286,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
-              <button 
+              <button
                 onClick={() => setDebugTab('magic')}
                 className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${debugTab === 'magic' ? 'bg-cyan-500 text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 DNS / Link Errors
               </button>
-              <button 
+              <button
                 onClick={() => setDebugTab('google')}
                 className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${debugTab === 'google' ? 'bg-fuchsia-500 text-slate-950' : 'text-slate-500 hover:text-slate-300'}`}
               >
@@ -306,7 +306,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <div className="p-6 bg-slate-950 border border-slate-800 rounded-3xl space-y-4">
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Target Redirect URL</p>
-                      <button 
+                      <button
                         onClick={() => copyToClipboard(FINAL_REDIRECT_URL)}
                         className="flex items-center gap-1.5 text-[10px] font-black text-cyan-400 hover:text-cyan-300"
                       >
@@ -317,13 +317,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <code className="block bg-slate-900 p-4 rounded-xl text-xs text-cyan-400 break-all border border-slate-800 font-mono">
                       {FINAL_REDIRECT_URL}
                     </code>
-                    
+
                     <div className="space-y-2 pt-2">
                       <label className="text-[9px] font-bold text-slate-600 uppercase tracking-widest flex items-center gap-1">
                         <LinkIcon className="w-3 h-3" />
                         Manual URL Override (Fixes "googhttps" errors)
                       </label>
-                      <input 
+                      <input
                         type="text"
                         placeholder="Paste your correct site URL here..."
                         value={customRedirectUrl}
@@ -341,7 +341,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <p className="text-xs text-slate-400 leading-relaxed">
                       If your link takes you to a "DNS Not Found" error containing <strong>googhttps</strong>, the proxy is mangling the protocol. Use the <strong>Manual URL Override</strong> above to set your base URL explicitly.
                     </p>
-                    <button 
+                    <button
                       onClick={handleRefreshSession}
                       className="w-full py-3 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
                     >
@@ -367,7 +367,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                           <li>Ensure <strong>Authorized Redirect URIs</strong> contains the Supabase callback below.</li>
                         </ol>
                       </div>
-                      
+
                       <div className="space-y-1">
                         <p className="font-bold text-slate-200">Supabase Callback URI:</p>
                         <code className="block mt-2 bg-slate-900 p-3 rounded-lg text-fuchsia-400 break-all border border-slate-800">
@@ -380,7 +380,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               )}
             </div>
 
-            <button 
+            <button
               onClick={() => setShowDebug(false)}
               className="w-full py-4 bg-white text-slate-950 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-cyan-400 transition-colors"
             >
