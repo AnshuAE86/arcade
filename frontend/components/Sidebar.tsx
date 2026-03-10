@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  HomeIcon, 
-  RocketLaunchIcon, 
-  TrophyIcon, 
-  RectangleGroupIcon, 
+import {
+  HomeIcon,
+  RocketLaunchIcon,
+  TrophyIcon,
+  RectangleGroupIcon,
   CloudArrowUpIcon,
   UserCircleIcon,
   XMarkIcon,
@@ -40,9 +40,10 @@ interface SidebarProps {
   toggle: () => void;
   user: User | null;
   onDemoLogin: (role: 'Player' | 'Creator' | 'Guest') => void;
+  genres?: string[];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, user, onDemoLogin }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, user, onDemoLogin, genres: dynamicGenres = [] }) => {
   const menuItems = [
     { name: 'Home', path: '/', icon: HomeIcon },
     { name: 'Browse Games', path: '/catalog', icon: RectangleGroupIcon },
@@ -57,28 +58,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, user, onDemoLogin }) 
     { name: 'Profile', path: '/profile', icon: UserCircleIcon, roles: ['Player', 'Creator'] },
   ];
 
-  const genres = [
-    { name: 'Action', icon: FireIcon },
-    { name: 'Adventure', icon: MapIcon },
-    { name: 'Car', icon: TruckIcon },
-    { name: 'Card', icon: IdentificationIcon },
-    { name: 'Casual', icon: HandRaisedIcon },
-    { name: 'Clicker', icon: CursorArrowRaysIcon },
-    { name: 'FPS', icon: LifebuoyIcon },
-    { name: 'Horror', icon: EyeIcon },
-    { name: '.io', icon: HashtagIcon },
-    { name: 'Puzzle', icon: PuzzlePieceIcon },
-    { name: 'Shooting', icon: LifebuoyIcon },
-    { name: 'Sports', icon: TrophyOutline },
-    { name: 'Thinking', icon: LightBulbIcon },
-    { name: 'Tower Defense', icon: BuildingOfficeIcon },
-  ];
+  const genreIcons: Record<string, any> = {
+    'Action': FireIcon,
+    'Adventure': MapIcon,
+    'Car': TruckIcon,
+    'Card': IdentificationIcon,
+    'Casual': HandRaisedIcon,
+    'Clicker': CursorArrowRaysIcon,
+    'FPS': LifebuoyIcon,
+    'Horror': EyeIcon,
+    '.io': HashtagIcon,
+    'Puzzle': PuzzlePieceIcon,
+    'Shooting': LifebuoyIcon,
+    'Sports': TrophyOutline,
+    'Thinking': LightBulbIcon,
+    'Tower Defense': BuildingOfficeIcon,
+  };
+
+  // Predefined list of genres to always show
+  const staticGenres = Object.keys(genreIcons);
+
+  // Combine static and dynamic genres, ensuring no duplicates
+  const allGenres = Array.from(new Set([...staticGenres, ...dynamicGenres])).sort();
 
   return (
-    <aside 
-      className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transition-transform duration-300 lg:translate-x-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
     >
       <div className="flex items-center justify-between p-6">
         <NavLink to="/" className="flex items-center gap-2 group">
@@ -98,10 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, user, onDemoLogin }) 
               key={item.name}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all group ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-cyan-500/10 to-transparent text-cyan-400 border-l-4 border-cyan-400' 
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                `flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all group ${isActive
+                  ? 'bg-gradient-to-r from-cyan-500/10 to-transparent text-cyan-400 border-l-4 border-cyan-400'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
                 }`
               }
             >
@@ -113,16 +118,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, user, onDemoLogin }) 
 
         <div>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-4 mb-2">Genres</p>
-          {genres.map((genre) => (
-            <NavLink
-              key={genre.name}
-              to={`/catalog?genre=${genre.name}`}
-              className="flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-all group"
-            >
-              <genre.icon className="w-4 h-4 group-hover:text-cyan-400 transition-colors" />
-              <span className="text-xs font-medium">{genre.name}</span>
-            </NavLink>
-          ))}
+          {allGenres.map((genre) => {
+            const Icon = genreIcons[genre] || HashtagIcon;
+            return (
+              <NavLink
+                key={genre}
+                to={`/catalog?genre=${genre}`}
+                className="flex items-center gap-3 px-4 py-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-all group"
+              >
+                <Icon className="w-4 h-4 group-hover:text-cyan-400 transition-colors" />
+                <span className="text-xs font-medium">{genre}</span>
+              </NavLink>
+            );
+          })}
         </div>
       </nav>
 
@@ -131,25 +139,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle, user, onDemoLogin }) 
         <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Demo Mode Controls</p>
           <div className="grid grid-cols-2 gap-2">
-            <button 
+            <button
               onClick={() => onDemoLogin('Player')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                user?.role === 'Player' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all ${user?.role === 'Player' ? 'bg-cyan-500 text-slate-950' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
             >
               <UserPlusIcon className="w-3.5 h-3.5" /> PLAYER
             </button>
-            <button 
+            <button
               onClick={() => onDemoLogin('Creator')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all ${
-                user?.role === 'Creator' ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-              }`}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold transition-all ${user?.role === 'Creator' ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
             >
               <WrenchScrewdriverIcon className="w-3.5 h-3.5" /> CREATOR
             </button>
           </div>
           {user && (
-            <button 
+            <button
               onClick={() => onDemoLogin('Guest')}
               className="w-full mt-2 py-2 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-bold hover:bg-red-500/20 transition-all flex items-center justify-center gap-1.5"
             >

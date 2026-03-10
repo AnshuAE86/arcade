@@ -1,81 +1,6 @@
 
 import { Game, GameGenre, User, Challenge, BrandZone } from './types';
 
-export const MOCK_GAMES: Game[] = [
-  {
-    id: '1',
-    title: 'Neon Drift 3000',
-    description: 'A high-speed car drifting through a futuristic neon cyberpunk cityscape.',
-    thumbnail: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.CAR,
-    plays: 125000,
-    weeklyPlays: 12000,
-    rating: 4.8,
-    creator: 'CyberGhost',
-    iframeUrl: 'https://www.crazygames.com/embed/polytrack',
-    tags: ['Car', 'Fast', '3D'],
-    createdAt: '2024-01-15',
-    isFeatured: true
-  },
-  {
-    id: '2',
-    title: 'Void Runner',
-    description: 'An endless runner survival game set in the vast, deep void of outer space.',
-    thumbnail: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.ACTION,
-    plays: 89000,
-    weeklyPlays: 5400,
-    rating: 4.5,
-    creator: 'MetaPixel',
-    iframeUrl: 'https://www.crazygames.com/embed/ovo',
-    tags: ['Action', 'Space', 'Hard'],
-    createdAt: '2024-01-10',
-    isFeatured: true
-  },
-  {
-    id: '3',
-    title: 'Zen Garden Puzzle',
-    description: 'A relaxing tile-matching puzzle game set in a beautiful, serene Japanese garden.',
-    thumbnail: 'https://images.unsplash.com/photo-1598902108854-10e335adac99?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.PUZZLE,
-    plays: 45000,
-    weeklyPlays: 890,
-    rating: 4.9,
-    creator: 'NatureCoder',
-    iframeUrl: 'https://www.crazygames.com/embed/mahjongg-solitaire',
-    tags: ['Puzzle', 'Garden', 'Relaxing'],
-    createdAt: '2024-01-12'
-  },
-  {
-    id: '4',
-    title: 'Bit Brawl',
-    description: 'An 8-bit retro street fighter style combat game. Choose your champion and fight.',
-    thumbnail: 'https://images.unsplash.com/photo-1551103782-8ab07afd45c1?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.ACTION,
-    plays: 210000,
-    weeklyPlays: 15600,
-    rating: 4.7,
-    creator: 'RetroKing',
-    iframeUrl: 'https://www.crazygames.com/embed/bloxdhop-io',
-    tags: ['Action', 'Retro', 'Combat'],
-    createdAt: '2024-01-05'
-  },
-  {
-    id: '5',
-    title: 'AI Architect',
-    description: 'A robot-driven city builder where you manage automated systems and growth.',
-    thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800',
-    genre: GameGenre.THINKING,
-    plays: 32000,
-    weeklyPlays: 1200,
-    rating: 4.2,
-    creator: 'SimMaster',
-    iframeUrl: 'https://www.crazygames.com/embed/idlescape',
-    tags: ['Thinking', 'Building', 'Robot'],
-    createdAt: '2024-01-20'
-  }
-];
-
 export const MOCK_USER: User = {
   id: 'u1',
   name: 'AlexVibe',
@@ -98,7 +23,8 @@ export const MOCK_USER: User = {
   referralCode: 'VIBE-ALEX',
   referralCount: 12,
   exp: 1540,
-  recentlyPlayed: ['2', '4']
+  recentlyPlayed: ['2', '4'],
+  followers: 1200
 };
 
 export const MOCK_QUESTS: Quest[] = [
@@ -114,25 +40,25 @@ export const MOCK_QUESTS: Quest[] = [
 ];
 
 export const MOCK_RAFFLES: Raffle[] = [
-  { 
-    id: 'r1', 
-    title: 'Steam Gift Card $20', 
-    description: 'Win a $20 Steam Gift Card to buy your favorite games!', 
-    prize: '$20 Steam Gift Card', 
-    cost: 50, 
-    entries: 145, 
-    endDate: '2024-04-01', 
-    image: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?auto=format&fit=crop&q=80&w=800' 
+  {
+    id: 'r1',
+    title: 'Steam Gift Card $20',
+    description: 'Win a $20 Steam Gift Card to buy your favorite games!',
+    prize: '$20 Steam Gift Card',
+    cost: 50,
+    entries: 145,
+    endDate: '2024-04-01',
+    image: 'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?auto=format&fit=crop&q=80&w=800'
   },
-  { 
-    id: 'r2', 
-    title: 'Game Key: Elden Ring', 
-    description: 'Win a Steam key for the critically acclaimed Elden Ring.', 
-    prize: 'Elden Ring Steam Key', 
-    cost: 100, 
-    entries: 890, 
-    endDate: '2024-04-15', 
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=800' 
+  {
+    id: 'r2',
+    title: 'Game Key: Elden Ring',
+    description: 'Win a Steam key for the critically acclaimed Elden Ring.',
+    prize: 'Elden Ring Steam Key',
+    cost: 100,
+    entries: 890,
+    endDate: '2024-04-15',
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=800'
   }
 ];
 
@@ -152,14 +78,6 @@ export const MOCK_ANALYTICS: AnalyticsData = {
     devices: { mobile: 65, desktop: 35 }
   }
 };
-
-export const MOCK_LEADERS: Partial<User>[] = [
-  { id: 'l1', name: 'ProGamerX', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Pro', challengePoints: 2450 },
-  { id: 'l2', name: 'SwiftFinger', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Swift', challengePoints: 2100 },
-  { id: 'l3', name: 'ComboKing', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Combo', challengePoints: 1850 },
-  { id: 'l4', name: 'AlexVibe', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex', challengePoints: 450 },
-  { id: 'l5', name: 'LofiBoi', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Lofi', challengePoints: 320 },
-];
 
 export const MOCK_CHALLENGES: Challenge[] = [
   {

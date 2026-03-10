@@ -1,27 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_RAFFLES, MOCK_USER } from '../constants';
 import { Raffle, User } from '../types';
-import { 
-  TicketIcon, 
-  ClockIcon, 
-  TrophyIcon, 
+import {
+  TicketIcon,
+  ClockIcon,
+  TrophyIcon,
   InformationCircleIcon,
   SparklesIcon,
   ShoppingBagIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+
 interface RafflesProps {
-  user: User;
+  user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
-  const [activeRaffles, setActiveRaffles] = useState<Raffle[]>(MOCK_RAFFLES);
+  const [activeRaffles, setActiveRaffles] = useState<Raffle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [lastEnteredRaffle, setLastEnteredRaffle] = useState<string>('');
   const [isConfettiActive, setIsConfettiActive] = useState(false);
   const [activeTab, setActiveTab] = useState<'raffles' | 'shop'>('raffles');
+
+  useEffect(() => {
+    const fetchRaffles = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/raffles/`);
+        if (response.ok) {
+          const data = await response.json();
+          setActiveRaffles(data);
+        }
+      } catch (error) {
+        console.error("Error fetching raffles:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRaffles();
+  }, []);
+
+  if (!user) return null;
 
   const shopItems = [
     { id: 's1', title: 'Ad-Free Pass', description: 'Remove all ads from the arcade for 30 days.', cost: 500, icon: SparklesIcon, category: 'Feature' },
@@ -30,23 +52,37 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
     { id: 's4', title: 'Raffle Multiplier', description: 'Your next raffle entry counts as double.', cost: 200, icon: TrophyIcon, category: 'Boost' }
   ];
 
-  const handleEnterRaffle = (raffle: Raffle) => {
+  const handleEnterRaffle = async (raffle: Raffle) => {
     if (user.arcadeCoins >= raffle.cost) {
-      setUser(prev => prev ? ({
-        ...prev,
-        arcadeCoins: prev.arcadeCoins - raffle.cost
-      }) : null);
-      
-      setActiveRaffles(prev => prev.map(r => 
-        r.id === raffle.id 
-          ? { ...r, entries: r.entries + 1 } 
-          : r
-      ));
+      try {
+        const response = await fetch(`${BACKEND_URL}/raffles/${raffle.id}/enter?user_id=${user.id}`, {
+          method: 'POST'
+        });
 
-      setLastEnteredRaffle(raffle.title);
-      setShowConfirmation(true);
-      setIsConfettiActive(true);
-      setTimeout(() => setIsConfettiActive(false), 3000);
+        if (response.ok) {
+          const updatedRaffle = await response.json();
+
+          setUser(prev => prev ? ({
+            ...prev,
+            arcadeCoins: prev.arcadeCoins - raffle.cost
+          }) : null);
+
+          setActiveRaffles(prev => prev.map(r =>
+            r.id === raffle.id ? updatedRaffle : r
+          ));
+
+          setLastEnteredRaffle(raffle.title);
+          setShowConfirmation(true);
+          setIsConfettiActive(true);
+          setTimeout(() => setIsConfettiActive(false), 3000);
+        } else {
+          const error = await response.json();
+          alert(error.detail || "Failed to enter raffle");
+        }
+      } catch (error) {
+        console.error("Error entering raffle:", error);
+        alert("An error occurred while entering the raffle");
+      }
     }
   };
 
@@ -57,7 +93,7 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
         arcadeCoins: prev.arcadeCoins - item.cost,
         isPremium: item.id === 's1' ? true : prev.isPremium
       }) : null);
-      
+
       setLastEnteredRaffle(item.title);
       setShowConfirmation(true);
       setIsConfettiActive(true);
@@ -79,7 +115,7 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
       {isConfettiActive && (
         <div className="fixed inset-0 pointer-events-none z-[100]">
           {[...Array(50)].map((_, i) => (
-            <div 
+            <div
               key={i}
               className="absolute w-2 h-2 rounded-full animate-ping"
               style={{
@@ -103,7 +139,7 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
             </div>
             <h3 className="text-2xl font-bold text-white mb-2 font-orbitron">{activeTab === 'raffles' ? 'ENTRY SUCCESSFUL!' : 'PURCHASE SUCCESSFUL!'}</h3>
             <p className="text-slate-400 mb-8">{activeTab === 'raffles' ? `You have successfully entered the ${lastEnteredRaffle} raffle. Good luck!` : `You have successfully purchased: ${lastEnteredRaffle}`}</p>
-            <button 
+            <button
               onClick={() => setShowConfirmation(false)}
               className="w-full py-4 bg-cyan-500 text-slate-950 font-black rounded-2xl hover:bg-cyan-400 transition-colors"
             >
@@ -120,13 +156,13 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex bg-slate-900 p-1 rounded-2xl border border-slate-800">
-            <button 
+            <button
               onClick={() => setActiveTab('raffles')}
               className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'raffles' ? 'bg-cyan-500 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-white'}`}
             >
               Raffles
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('shop')}
               className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'shop' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
             >
@@ -143,79 +179,90 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
         </div>
       </div>
 
-      {activeTab === 'raffles' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {activeRaffles.map(raffle => {
-            const daysLeft = calculateDaysLeft(raffle.endDate);
-            const canAfford = user.arcadeCoins >= raffle.cost;
+      {isLoading && activeTab === 'raffles' ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+        </div>
+      ) : activeTab === 'raffles' ? (
+        activeRaffles.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {activeRaffles.map(raffle => {
+              const daysLeft = calculateDaysLeft(raffle.endDate);
+              const canAfford = (user.arcadeCoins || 0) >= raffle.cost;
 
-            return (
-              <div key={raffle.id} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 overflow-hidden flex flex-col md:flex-row hover:border-cyan-500/50 transition-all group">
-                <div className="md:w-1/3 relative h-48 md:h-auto">
-                  <img 
-                    src={raffle.image} 
-                    alt={raffle.title} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-lg border border-slate-700 flex items-center gap-2">
-                    <ClockIcon className="w-4 h-4 text-cyan-400" />
-                    <span className="text-xs font-bold text-white uppercase">{daysLeft} Days Left</span>
-                  </div>
-                </div>
-
-                <div className="md:w-2/3 p-6 flex flex-col">
-                  <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors uppercase font-orbitron">
-                      {raffle.title}
-                    </h2>
-                    <div className="p-2 bg-slate-700/50 rounded-lg text-yellow-400">
-                      <TrophyIcon className="w-5 h-5" />
-                    </div>
-                  </div>
-                  
-                  <p className="text-slate-400 text-sm mb-6 flex-grow">
-                    {raffle.description}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                      <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Total Entries</p>
-                      <p className="text-lg font-bold text-white">{raffle.entries}</p>
-                    </div>
-                    <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
-                      <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Odds of Winning</p>
-                      <p className="text-lg font-bold text-cyan-400">{raffle.entries > 0 ? `1 in ${raffle.entries + 1}` : '100%'}</p>
+              return (
+                <div key={raffle.id} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 overflow-hidden flex flex-col md:flex-row hover:border-cyan-500/50 transition-all group">
+                  <div className="md:w-1/3 relative h-48 md:h-auto">
+                    <img
+                      src={raffle.image}
+                      alt={raffle.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                    <div className="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-lg border border-slate-700 flex items-center gap-2">
+                      <ClockIcon className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold text-white uppercase">{daysLeft} Days Left</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 mt-auto">
-                    <div className="flex-grow">
-                      <p className="text-[10px] text-slate-500 font-black uppercase">Cost Per Entry</p>
-                      <div className="flex items-center gap-1">
-                        <SparklesIcon className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xl font-black text-white">{raffle.cost}</span>
-                        <span className="text-xs font-bold text-slate-500">COINS</span>
+                  <div className="md:w-2/3 p-6 flex flex-col">
+                    <div className="flex justify-between items-start mb-2">
+                      <h2 className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors uppercase font-orbitron">
+                        {raffle.title}
+                      </h2>
+                      <div className="p-2 bg-slate-700/50 rounded-lg text-yellow-400">
+                        <TrophyIcon className="w-5 h-5" />
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleEnterRaffle(raffle)}
-                      disabled={!canAfford}
-                      className={`px-8 py-3 rounded-2xl font-black text-sm uppercase transition-all flex items-center gap-2 ${
-                        canAfford 
+
+                    <p className="text-slate-400 text-sm mb-6 flex-grow">
+                      {raffle.description}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                        <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Total Entries</p>
+                        <p className="text-lg font-bold text-white">{raffle.entries}</p>
+                      </div>
+                      <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                        <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Odds of Winning</p>
+                        <p className="text-lg font-bold text-cyan-400">{raffle.entries > 0 ? `1 in ${raffle.entries + 1}` : '100%'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 mt-auto">
+                      <div className="flex-grow">
+                        <p className="text-[10px] text-slate-500 font-black uppercase">Cost Per Entry</p>
+                        <div className="flex items-center gap-1">
+                          <SparklesIcon className="w-4 h-4 text-yellow-400" />
+                          <span className="text-xl font-black text-white">{raffle.cost}</span>
+                          <span className="text-xs font-bold text-slate-500">COINS</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleEnterRaffle(raffle)}
+                        disabled={!canAfford}
+                        className={`px-8 py-3 rounded-2xl font-black text-sm uppercase transition-all flex items-center gap-2 ${canAfford
                           ? 'bg-gradient-to-r from-cyan-500 to-indigo-500 text-white hover:scale-105 shadow-lg shadow-cyan-500/20'
                           : 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600'
-                      }`}
-                    >
-                      <ShoppingBagIcon className="w-5 h-5" />
-                      ENTER NOW
-                    </button>
+                          }`}
+                      >
+                        <ShoppingBagIcon className="w-5 h-5" />
+                        ENTER NOW
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-slate-900/50 rounded-3xl border border-slate-800">
+            <TicketIcon className="w-16 h-16 text-slate-700 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2 font-orbitron uppercase tracking-tighter">No Active Raffles</h2>
+            <p className="text-slate-500">Check back later for new prizes and gift cards!</p>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {shopItems.map(item => (
@@ -230,15 +277,14 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
               </div>
               <h3 className="text-xl font-bold text-white mb-2 uppercase font-orbitron">{item.title}</h3>
               <p className="text-sm text-slate-400 mb-8 flex-grow">{item.description}</p>
-              
-              <button 
+
+              <button
                 onClick={() => handleBuyShopItem(item)}
                 disabled={user.arcadeCoins < item.cost}
-                className={`w-full py-4 rounded-2xl font-black text-sm uppercase transition-all flex items-center justify-center gap-2 ${
-                  user.arcadeCoins >= item.cost
-                    ? 'bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:scale-105 shadow-lg shadow-indigo-500/20'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                }`}
+                className={`w-full py-4 rounded-2xl font-black text-sm uppercase transition-all flex items-center justify-center gap-2 ${user.arcadeCoins >= item.cost
+                  ? 'bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white hover:scale-105 shadow-lg shadow-indigo-500/20'
+                  : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
               >
                 <SparklesIcon className="w-4 h-4" />
                 {item.cost} COINS
@@ -255,7 +301,7 @@ export const Raffles: React.FC<RafflesProps> = ({ user, setUser }) => {
         <div className="flex-grow text-center md:text-left">
           <h3 className="text-xl font-bold text-white mb-2 uppercase font-orbitron">How Raffles Work</h3>
           <p className="text-slate-400 text-sm max-w-2xl">
-            Each ticket you purchase gives you one chance to win. Winners are drawn automatically when the timer expires. 
+            Each ticket you purchase gives you one chance to win. Winners are drawn automatically when the timer expires.
             All prizes are digital and will be delivered to your account email within 24 hours of winning.
           </p>
         </div>

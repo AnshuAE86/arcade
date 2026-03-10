@@ -1,53 +1,82 @@
 
-import React, { useState } from 'react';
-import { Game } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Game, User } from '../types';
 import AdUnit from '../components/AdUnit';
-import { 
-  TrophyIcon, 
-  FireIcon, 
-  SparklesIcon, 
+import {
+  TrophyIcon,
+  FireIcon,
+  SparklesIcon,
   PlayIcon,
   UserGroupIcon,
   BoltIcon,
   CalendarDaysIcon
 } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_LEADERS } from '../constants';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+
+interface CreatorStat {
+  name: string;
+  totalPlays: number;
+  gamesCount: number;
+}
 
 interface LeaderboardsProps {
   games: Game[];
+  weeklyGames: Game[];
 }
 
-export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
+export const Leaderboards: React.FC<LeaderboardsProps> = ({ games, weeklyGames }) => {
   const navigate = useNavigate();
   const [activeMetric, setActiveMetric] = useState<'plays' | 'weekly' | 'power' | 'creator' | 'players'>('plays');
+  const [topCreators, setTopCreators] = useState<CreatorStat[]>([]);
+  const [topPlayers, setTopPlayers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTopCreators = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/games/leaderboard/top-creators`);
+        if (response.ok) {
+          const data = await response.json();
+          setTopCreators(data);
+        }
+      } catch (error) {
+        console.error('Error fetching top creators:', error);
+      }
+    };
+
+    const fetchTopPlayers = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/users/leaderboard/top-players`);
+        if (response.ok) {
+          const data = await response.json();
+          setTopPlayers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching top players:', error);
+      }
+    };
+
+    if (activeMetric === 'creator') {
+      fetchTopCreators();
+    } else if (activeMetric === 'players') {
+      fetchTopPlayers();
+    }
+  }, [activeMetric]);
 
   // Logic for different leaderboards
-  const topGamesByPlays = [...games].sort((a, b) => b.plays - a.plays).slice(0, 10);
-  const topGamesByWeekly = [...games].sort((a, b) => b.weeklyPlays - a.weeklyPlays).slice(0, 10);
-  
+  const topGamesByPlays = games;
+  const topGamesByWeekly = weeklyGames;
+
   // Power Score: Rating * log10(plays + 1) to reward both quality and reach
-  const topGamesByPower = [...games].sort((a, b) => {
+  // Combine both lists to get a better sample for power score
+  const combinedGames = Array.from(new Map([...games, ...weeklyGames].map(g => [g.id, g])).values());
+  const topGamesByPower = combinedGames.sort((a, b) => {
     const scoreA = a.rating * Math.log10(a.plays + 1);
     const scoreB = b.rating * Math.log10(b.plays + 1);
     return scoreB - scoreA;
   }).slice(0, 10);
-  
-  // Aggregate creators by total plays
-  const creatorStats = games.reduce((acc, game) => {
-    if (!acc[game.creator]) {
-      acc[game.creator] = { name: game.creator, totalPlays: 0, gamesCount: 0 };
-    }
-    acc[game.creator].totalPlays += game.plays;
-    acc[game.creator].gamesCount += 1;
-    return acc;
-  }, {} as Record<string, { name: string, totalPlays: number, gamesCount: number }>);
-
-  const topCreators = (Object.values(creatorStats) as Array<{ name: string, totalPlays: number, gamesCount: number }>)
-    .sort((a, b) => b.totalPlays - a.totalPlays)
-    .slice(0, 10);
-
-  const topPlayers = [...MOCK_LEADERS].sort((a, b) => (b.challengePoints || 0) - (a.challengePoints || 0));
 
   return (
     <div className="space-y-10">
@@ -56,7 +85,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
           <h1 className="text-4xl font-black font-orbitron tracking-tighter mb-2 uppercase">HALL OF FAME</h1>
           <p className="text-slate-400">The most influential games, creators, and competitors in the Arcade ecosystem.</p>
         </div>
-        
+
         <div className="flex flex-wrap bg-slate-900 p-1 rounded-2xl border border-slate-800 gap-1">
           {[
             { id: 'plays', label: 'All Time', icon: PlayIcon },
@@ -65,7 +94,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
             { id: 'creator', label: 'Top Creators', icon: SparklesIcon },
             { id: 'players', label: 'Best Players', icon: UserGroupIcon },
           ].map((metric) => (
-            <button 
+            <button
               key={metric.id}
               onClick={() => setActiveMetric(metric.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeMetric === metric.id ? 'bg-cyan-500 text-slate-950 shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
@@ -90,30 +119,29 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
                   {activeMetric === 'creator' ? 'Games' : activeMetric === 'players' ? 'Rank' : 'Genre'}
                 </th>
                 <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right">
-                  {activeMetric === 'plays' ? 'Total Plays' : 
-                   activeMetric === 'weekly' ? 'Weekly Plays' :
-                   activeMetric === 'power' ? 'Power Score' :
-                   activeMetric === 'creator' ? 'Total Reach' : 'Challenge Points'}
+                  {activeMetric === 'plays' ? 'Total Plays' :
+                    activeMetric === 'weekly' ? 'Weekly Plays' :
+                      activeMetric === 'power' ? 'Power Score' :
+                        activeMetric === 'creator' ? 'Total Reach' : 'Challenge Points'}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
               {(
-                activeMetric === 'plays' ? topGamesByPlays : 
-                activeMetric === 'weekly' ? topGamesByWeekly :
-                activeMetric === 'power' ? topGamesByPower :
-                activeMetric === 'creator' ? topCreators : 
-                topPlayers
+                activeMetric === 'plays' ? topGamesByPlays :
+                  activeMetric === 'weekly' ? topGamesByWeekly :
+                    activeMetric === 'power' ? topGamesByPower :
+                      activeMetric === 'creator' ? topCreators :
+                        topPlayers
               ).map((item: any, idx) => (
                 <tr key={idx} className="hover:bg-white/5 transition-colors group">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-black font-orbitron text-sm ${
-                        idx === 0 ? 'bg-yellow-500 text-slate-950 shadow-[0_0_15px_rgba(234,179,8,0.3)]' : 
-                        idx === 1 ? 'bg-slate-300 text-slate-950' : 
-                        idx === 2 ? 'bg-orange-500 text-slate-950' : 
-                        'bg-slate-800 text-slate-400'
-                      }`}>
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-black font-orbitron text-sm ${idx === 0 ? 'bg-yellow-500 text-slate-950 shadow-[0_0_15px_rgba(234,179,8,0.3)]' :
+                        idx === 1 ? 'bg-slate-300 text-slate-950' :
+                          idx === 2 ? 'bg-orange-500 text-slate-950' :
+                            'bg-slate-800 text-slate-400'
+                        }`}>
                         {idx + 1}
                       </span>
                       {idx === 0 && <TrophyIcon className="w-5 h-5 text-yellow-500 animate-pulse" />}
@@ -122,13 +150,13 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-slate-800 overflow-hidden border border-slate-700">
-                        <img 
-                          src={activeMetric === 'creator' || activeMetric === 'players'
-                            ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.name}`
-                            : (item as Game).thumbnail
-                          } 
-                          className="w-full h-full object-cover" 
-                          alt="" 
+                        <img
+                          src={activeMetric === 'players' ? item.avatar :
+                            activeMetric === 'creator' ? (item.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.name}`)
+                              : (item as Game).thumbnail
+                          }
+                          className="w-full h-full object-cover"
+                          alt=""
                         />
                       </div>
                       <div>
@@ -141,9 +169,9 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
                   </td>
                   <td className="px-8 py-6">
                     <span className="px-3 py-1 bg-slate-800 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400 border border-slate-700">
-                      {activeMetric === 'creator' ? `${item.gamesCount} Built` : 
-                       activeMetric === 'players' ? (item.challengePoints > 1000 ? 'Master' : 'Expert') : 
-                       item.genre}
+                      {activeMetric === 'creator' ? `${item.gamesCount} Built` :
+                        activeMetric === 'players' ? (item.challengePoints > 1000 ? 'Master' : 'Expert') :
+                          item.genre}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">
@@ -159,9 +187,9 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games }) => {
                         <div className="flex flex-col items-end">
                           <p className={`font-black font-orbitron text-xl ${activeMetric === 'players' ? 'text-yellow-400' : 'text-cyan-400'}`}>
                             {activeMetric === 'players' ? (item.challengePoints || 0).toLocaleString() :
-                             activeMetric === 'weekly' ? (item.weeklyPlays || 0).toLocaleString() :
-                             activeMetric === 'creator' ? (item.totalPlays / 1000).toFixed(1) + 'k' :
-                             (item.plays / 1000).toFixed(1) + 'k'}
+                              activeMetric === 'weekly' ? (item.weeklyPlays || 0).toLocaleString() :
+                                activeMetric === 'creator' ? (item.totalPlays / 1000).toFixed(1) + 'k' :
+                                  (item.plays / 1000).toFixed(1) + 'k'}
                           </p>
                           <p className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">
                             {activeMetric === 'players' ? 'Total XP' : 'Engagement'}

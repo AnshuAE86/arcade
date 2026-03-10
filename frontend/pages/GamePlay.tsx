@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Game, User } from '../types';
 import AdUnit from '../components/AdUnit';
-import { 
-  ArrowsPointingOutIcon, 
-  HeartIcon, 
+import {
+  ArrowsPointingOutIcon,
+  HeartIcon,
   ShareIcon,
   FlagIcon,
   HandThumbUpIcon,
@@ -36,7 +36,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
     const found = games.find(g => g.id === id);
     if (found) {
       setGame(found);
-      
+
       // Tracking games played
       if (updateQuestProgress) {
         updateQuestProgress('play-games', 1);
@@ -65,7 +65,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
     const elem = document.getElementById('game-container');
     if (!elem) return;
     if (!isFullscreen) {
-      elem.requestFullscreen().catch(err => console.log(err));
+      elem.requestFullscreen().catch(err => console.error(err));
     } else {
       document.exitFullscreen();
     }
@@ -79,15 +79,15 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
       {/* Game Stage */}
       <div className="bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
         <div id="game-container" className="relative aspect-video bg-black flex items-center justify-center">
-          <iframe 
-            src={game.iframeUrl} 
+          <iframe
+            src={game.iframeUrl}
             className="w-full h-full border-none"
             title={game.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
         </div>
-        
+
         <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-t border-slate-800">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-black font-orbitron">{game.title}</h1>
@@ -96,15 +96,14 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
               <span className="font-bold">{game.rating}</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => onToggleLibrary(game.id)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all border ${
-                isInLibrary 
-                ? 'bg-green-500/10 border-green-500 text-green-400' 
-                : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all border ${isInLibrary
+                  ? 'bg-green-500/10 border-green-500 text-green-400'
+                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                }`}
             >
               {isInLibrary ? (
                 <>
@@ -118,7 +117,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
                 </>
               )}
             </button>
-            <button 
+            <button
               onClick={toggleFullscreen}
               className="flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20"
             >
@@ -149,12 +148,11 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
                   onClick={() => setUserRating(star)}
                   className="transition-transform active:scale-90"
                 >
-                  <StarIcon 
-                    className={`w-10 h-10 ${
-                      (hoverRating || userRating || 0) >= star 
-                        ? 'text-yellow-500' 
+                  <StarIcon
+                    className={`w-10 h-10 ${(hoverRating || userRating || 0) >= star
+                        ? 'text-yellow-500'
                         : 'text-slate-800'
-                    }`} 
+                      }`}
                   />
                 </button>
               ))}
@@ -169,8 +167,8 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
           {/* Details */}
           <section className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800">
             <div className="flex items-center gap-4 mb-6">
-              <img 
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${game.creator}`} 
+              <img
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${game.creator}`}
                 alt={game.creator}
                 className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700"
               />
@@ -228,7 +226,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
                 </select>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex gap-4 p-4 rounded-2xl bg-slate-900/30 border border-slate-800/50">
                 <UserCircleIcon className="w-10 h-10 text-slate-700" />
@@ -264,7 +262,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
             {games.filter(g => g.id !== id && g.genre === game.genre).slice(0, 3).map(rec => (
               <GameCard key={rec.id} game={rec} compact />
             ))}
-            
+
             {/* AD SPOT 2 - Sidebar */}
             <AdUnit slot="gameplay-sidebar-1" className="my-2" />
 
@@ -272,7 +270,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ games, onPlayComplete, updat
               <GameCard key={rec.id} game={rec} compact />
             ))}
           </div>
-          
+
           <div className="p-6 rounded-3xl bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/20">
             <h4 className="font-black text-cyan-400 mb-2 uppercase tracking-tight text-sm">GameFi Rewards</h4>
             <p className="text-xs text-slate-300 leading-relaxed mb-4">

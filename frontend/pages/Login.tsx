@@ -18,7 +18,7 @@ import {
   XMarkIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
-import { supabase, supabaseUrl } from '../App';
+import { supabase, supabaseUrl } from '../supabase';
 import { MOCK_USER } from '../constants';
 
 interface LoginProps {

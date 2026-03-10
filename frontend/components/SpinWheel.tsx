@@ -3,6 +3,8 @@ import { SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { MOCK_USER, MOCK_QUESTS } from '../constants';
 import { User } from '../types';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+
 interface SpinWheelProps {
   user: User;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
@@ -19,35 +21,32 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
   const prizes = [10, 20, 50, 100, 200, 500, 10, 50]; // Simple prize pool
 
   useEffect(() => {
-    const checkCanSpin = () => {
-      const lastSpin = localStorage.getItem('lastSpinDate');
-      if (!lastSpin) {
-        setCanSpin(true);
-        return;
-      }
+    const checkCanSpin = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/users/${user.id}/spin-status`);
+        if (response.ok) {
+          const status = await response.json();
+          setCanSpin(status.canSpin);
 
-      const lastDate = new Date(lastSpin);
-      const now = new Date();
-      const diff = now.getTime() - lastDate.getTime();
-      const hoursLeft = 24 - (diff / (1000 * 60 * 60));
-
-      if (hoursLeft <= 0) {
-        setCanSpin(true);
-        setCountdown('');
-      } else {
-        setCanSpin(false);
-        const h = Math.floor(hoursLeft);
-        const m = Math.floor((hoursLeft - h) * 60);
-        setCountdown(`${h}h ${m}m`);
+          if (!status.canSpin) {
+            const h = Math.floor(status.hoursLeft);
+            const m = Math.floor((status.hoursLeft - h) * 60);
+            setCountdown(`${h}h ${m}m`);
+          } else {
+            setCountdown('');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking spin status:', error);
       }
     };
 
     checkCanSpin();
     const timer = setInterval(checkCanSpin, 60000);
     return () => clearInterval(timer);
-  }, []);
+  }, [user.id, user.lastSpinDate]);
 
-  const handleSpin = (isPaid: boolean = false) => {
+  const handleSpin = async (isPaid: boolean = false) => {
     if (isSpinning) return;
     if (!isPaid && !canSpin) return;
     if (isPaid && user.arcadeCoins < 50) return;
@@ -55,51 +54,62 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
     setIsSpinning(true);
     setResult(null);
 
-    // Calculate a random prize first
-    const sectorSize = 360 / prizes.length;
-    const randomIndex = Math.floor(Math.random() * prizes.length);
-    const wonAmount = prizes[randomIndex];
-    
-    // Calculate exact rotation to land on the center of that sector
-    // sectors are clockwise from top, so we need to account for that
-    // Sector 0 is at 0 degrees (top), Sector 1 is at 45 degrees, etc.
-    // The wheel pointer is at the top. 
-    // To land on sector i, the wheel must rotate (360 - (i * sectorSize)) degrees
-    const targetSectorRotation = 360 - (randomIndex * sectorSize);
-    const extraSpins = 360 * 10; // 10 full rotations for drama
-    const finalRotation = rotation + extraSpins + targetSectorRotation - (rotation % 360);
-    
-    setRotation(finalRotation);
-
-    setTimeout(() => {
-      setIsSpinning(false);
-      setResult(wonAmount);
-      setIsConfettiActive(true);
-      setTimeout(() => setIsConfettiActive(false), 3000);
-      
-      // Update User and Quest Progress
-      setUser(prev => {
-        if (!prev) return null;
-        
-        const updatedProgress = { ...prev.questProgress };
-        MOCK_QUESTS.forEach(q => {
-          if (q.category === 'spin-wheel' && !prev.completedQuests.includes(q.id)) {
-            updatedProgress[q.id] = Math.min((updatedProgress[q.id] || 0) + 1, q.target);
-          }
-        });
-
-        return {
-          ...prev,
-          arcadeCoins: (prev.arcadeCoins + wonAmount) - (isPaid ? 50 : 0),
-          questProgress: updatedProgress
-        };
+    try {
+      const response = await fetch(`${BACKEND_URL}/users/${user.id}/spin?is_paid=${isPaid}`, {
+        method: 'POST',
       });
 
-      if (!isPaid) {
-        localStorage.setItem('lastSpinDate', new Date().toISOString());
-        setCanSpin(false);
+      if (!response.ok) {
+        throw new Error('Failed to spin wheel');
       }
-    }, 5000); // Longer duration for drama
+
+      const { randomIndex, wonAmount, newBalance, lastSpinDate } = await response.json();
+
+      // Calculate exact rotation to land on the center of that sector
+      // sectors are clockwise from top, so we need to account for that
+      // Sector 0 is at 0 degrees (top), Sector 1 is at 45 degrees, etc.
+      // The wheel pointer is at the top. 
+      // To land on sector i, the wheel must rotate (360 - (i * sectorSize)) degrees
+      const sectorSize = 360 / prizes.length;
+      const targetSectorRotation = 360 - (randomIndex * sectorSize);
+      const extraSpins = 360 * 10; // 10 full rotations for drama
+      const finalRotation = rotation + extraSpins + targetSectorRotation - (rotation % 360);
+
+      setRotation(finalRotation);
+
+      setTimeout(() => {
+        setIsSpinning(false);
+        setResult(wonAmount);
+        setIsConfettiActive(true);
+        setTimeout(() => setIsConfettiActive(false), 3000);
+
+        // Update User and Quest Progress
+        setUser(prev => {
+          if (!prev) return null;
+
+          const updatedProgress = { ...prev.questProgress };
+          MOCK_QUESTS.forEach(q => {
+            if (q.category === 'spin-wheel' && !prev.completedQuests.includes(q.id)) {
+              updatedProgress[q.id] = Math.min((updatedProgress[q.id] || 0) + 1, q.target);
+            }
+          });
+
+          return {
+            ...prev,
+            arcadeCoins: newBalance,
+            questProgress: updatedProgress,
+            lastSpinDate: isPaid ? prev.lastSpinDate : lastSpinDate
+          };
+        });
+
+        if (!isPaid) {
+          setCanSpin(false);
+        }
+      }, 5000); // Longer duration for drama
+    } catch (error) {
+      console.error('Spin error:', error);
+      setIsSpinning(false);
+    }
   };
 
   return (
@@ -108,7 +118,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
       {isConfettiActive && (
         <div className="absolute inset-0 pointer-events-none z-[100]">
           {[...Array(30)].map((_, i) => (
-            <div 
+            <div
               key={i}
               className="absolute w-2 h-2 rounded-full animate-ping"
               style={{
@@ -124,7 +134,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
       )}
 
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500"></div>
-      
+
       <div className="mb-8 text-center">
         <h2 className="text-2xl font-bold font-orbitron text-white mb-2 flex items-center justify-center gap-2">
           DAILY SPIN <SparklesIcon className="w-6 h-6 text-yellow-400" />
@@ -139,40 +149,37 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
         </div>
 
         {/* The Wheel */}
-        <div 
+        <div
           className="w-full h-full rounded-full border-8 border-slate-700 relative overflow-hidden shadow-2xl shadow-cyan-500/10"
-          style={{ 
+          style={{
             transform: `rotate(${rotation}deg)`,
             transition: isSpinning ? 'transform 5s cubic-bezier(0.15, 0, 0.15, 1)' : 'none'
           }}
         >
           {prizes.map((prize, i) => (
-            <div 
+            <div
               key={i}
               className="absolute top-0 left-0 w-full h-full"
               style={{ transform: `rotate(${i * (360 / prizes.length)}deg)` }}
             >
-              <div 
-                className={`absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1/2 origin-bottom flex flex-col items-center pt-4 ${
-                  i % 2 === 0 ? 'text-cyan-400' : 'text-indigo-400'
-                }`}
+              <div
+                className={`absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1/2 origin-bottom flex flex-col items-center pt-4 ${i % 2 === 0 ? 'text-cyan-400' : 'text-indigo-400'
+                  }`}
               >
                 <span className="font-bold text-lg rotate-0">{prize}</span>
               </div>
-              <div 
-                className={`absolute top-0 left-0 w-full h-full origin-center opacity-20 ${
-                  i % 2 === 0 ? 'bg-cyan-500' : 'bg-indigo-500'
-                }`}
-                style={{ 
+              <div
+                className={`absolute top-0 left-0 w-full h-full origin-center opacity-20 ${i % 2 === 0 ? 'bg-cyan-500' : 'bg-indigo-500'
+                  }`}
+                style={{
                   clipPath: `polygon(50% 50%, 50% 0%, ${50 + 50 * Math.tan((360 / prizes.length / 2) * (Math.PI / 180))}% 0%)`,
                   transform: `rotate(-${360 / prizes.length / 2}deg)`
                 }}
               ></div>
-              <div 
-                className={`absolute top-0 left-0 w-full h-full origin-center opacity-20 ${
-                  i % 2 === 0 ? 'bg-cyan-500' : 'bg-indigo-500'
-                }`}
-                style={{ 
+              <div
+                className={`absolute top-0 left-0 w-full h-full origin-center opacity-20 ${i % 2 === 0 ? 'bg-cyan-500' : 'bg-indigo-500'
+                  }`}
+                style={{
                   clipPath: `polygon(50% 50%, 50% 0%, ${50 - 50 * Math.tan((360 / prizes.length / 2) * (Math.PI / 180))}% 0%)`,
                   transform: `rotate(${360 / prizes.length / 2}deg)`
                 }}
@@ -197,11 +204,10 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
         <button
           onClick={() => handleSpin(false)}
           disabled={!canSpin || isSpinning}
-          className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${
-            !canSpin || isSpinning
-              ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600'
-              : 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 text-white hover:scale-105 shadow-xl shadow-indigo-500/25 active:scale-95'
-          }`}
+          className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${!canSpin || isSpinning
+            ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600'
+            : 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 text-white hover:scale-105 shadow-xl shadow-indigo-500/25 active:scale-95'
+            }`}
         >
           {isSpinning ? (
             <ArrowPathIcon className="w-6 h-6 animate-spin" />
@@ -211,16 +217,15 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
             `NEXT FREE SPIN IN ${countdown}`
           )}
         </button>
-        
+
         {!canSpin && !isSpinning && (
           <button
             onClick={() => handleSpin(true)}
             disabled={user.arcadeCoins < 50}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${
-              user.arcadeCoins < 50
-                ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-700'
-                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-slate-900 hover:scale-105 shadow-xl shadow-orange-500/20 active:scale-95'
-            }`}
+            className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${user.arcadeCoins < 50
+              ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-700'
+              : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-slate-900 hover:scale-105 shadow-xl shadow-orange-500/20 active:scale-95'
+              }`}
           >
             <SparklesIcon className="w-6 h-6" />
             SPIN AGAIN (50 COINS)

@@ -11,6 +11,14 @@ interface FeaturedCarouselProps {
 const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ games }) => {
   const [current, setCurrent] = useState(0);
 
+  if (!games || games.length === 0) {
+    return (
+      <div className="w-full h-[300px] md:h-[450px] rounded-3xl bg-slate-900/50 flex items-center justify-center border border-slate-800 animate-pulse">
+        <p className="text-slate-500 font-black font-orbitron uppercase tracking-widest">Loading Featured Games...</p>
+      </div>
+    );
+  }
+
   const next = () => setCurrent((prev) => (prev + 1) % games.length);
   const prev = () => setCurrent((prev) => (prev - 1 + games.length) % games.length);
 
@@ -20,8 +28,8 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ games }) => {
     <div className="relative w-full h-[300px] md:h-[450px] rounded-3xl overflow-hidden group">
       {/* Background with motion */}
       <div className="absolute inset-0 transition-opacity duration-1000">
-        <img 
-          src={activeGame.thumbnail} 
+        <img
+          src={activeGame.thumbnail}
           alt={activeGame.title}
           className="w-full h-full object-cover scale-105"
         />
@@ -39,17 +47,17 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ games }) => {
             {activeGame.genre}
           </span>
         </div>
-        
+
         <h1 className="text-4xl md:text-6xl font-black font-orbitron mb-4 tracking-tighter leading-tight">
           {activeGame.title}
         </h1>
-        
+
         <p className="text-slate-300 text-lg mb-8 line-clamp-3 md:line-clamp-none max-w-lg">
           {activeGame.description}
         </p>
 
         <div className="flex items-center gap-4">
-          <Link 
+          <Link
             to={`/game/${activeGame.id}`}
             className="flex items-center gap-2 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-2xl font-black text-lg transition-all transform hover:scale-105 hover:rotate-1"
           >
@@ -63,13 +71,13 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ games }) => {
       </div>
 
       {/* Navigation */}
-      <button 
+      <button
         onClick={prev}
         className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/50 hover:bg-cyan-400 text-white hover:text-slate-950 transition-all opacity-0 group-hover:opacity-100"
       >
         <ChevronLeftIcon className="w-8 h-8" />
       </button>
-      <button 
+      <button
         onClick={next}
         className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/50 hover:bg-cyan-400 text-white hover:text-slate-950 transition-all opacity-0 group-hover:opacity-100"
       >
@@ -79,7 +87,7 @@ const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({ games }) => {
       {/* Dots */}
       <div className="absolute bottom-6 right-8 flex gap-2">
         {games.map((_, idx) => (
-          <button 
+          <button
             key={idx}
             onClick={() => setCurrent(idx)}
             className={`h-2 rounded-full transition-all ${idx === current ? 'w-8 bg-cyan-400' : 'w-2 bg-slate-700 hover:bg-slate-500'}`}

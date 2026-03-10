@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { GameGenre, Game } from '../types';
 import GameCard from '../components/GameCard';
 import AdUnit from '../components/AdUnit';
-import { 
-  FunnelIcon, 
+import {
+  FunnelIcon,
   ChevronDownIcon,
   Squares2X2Icon,
   ListBulletIcon,
@@ -14,30 +14,50 @@ import {
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 interface CatalogProps {
-  games: Game[];
+  genres: string[];
 }
 
-export const Catalog: React.FC<CatalogProps> = ({ games }) => {
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+
+export const Catalog: React.FC<CatalogProps> = ({ genres: availableGenres }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const genreParam = searchParams.get('genre');
 
-  const [activeGenre, setActiveGenre] = useState<GameGenre | 'All'>('All');
+  const genres = ['All', ...availableGenres];
+  const [games, setGames] = useState<Game[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeGenre, setActiveGenre] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'Popular' | 'Newest' | 'Rating'>('Popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [minRating, setMinRating] = useState(0);
 
-  useEffect(() => {
-    if (genreParam) {
-      setActiveGenre(genreParam as GameGenre);
-    } else {
-      setActiveGenre('All');
+  // Fetch games when genre changes (Backend Filtering)
+  const fetchFilteredGames = async (genre: string) => {
+    setIsLoading(true);
+    try {
+      const url = genre === 'All'
+        ? `${BACKEND_URL}/games/browse`
+        : `${BACKEND_URL}/games/browse?genre=${encodeURIComponent(genre)}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setGames(data);
+      }
+    } catch (error) {
+      console.error('Error fetching filtered games:', error);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const genre = genreParam || 'All';
+    setActiveGenre(genre);
+    fetchFilteredGames(genre);
   }, [genreParam]);
 
-  const genres = ['All', ...Object.values(GameGenre)];
-
-  const handleGenreChange = (genre: GameGenre | 'All') => {
+  const handleGenreChange = (genre: string) => {
     setActiveGenre(genre);
     if (genre === 'All') {
       searchParams.delete('genre');
@@ -47,9 +67,9 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
     setSearchParams(searchParams);
   };
 
+  // We still do some frontend sorting and rating filtering on the fetched set
   const filteredGames = games
-    .filter(g => (activeGenre === 'All' || g.genre === activeGenre))
-    .filter(g => g.rating >= minRating)
+    .filter(g => (activeGenre === 'All' || g.genre === activeGenre) && g.rating >= minRating)
     .sort((a, b) => {
       if (sortBy === 'Popular') return b.plays - a.plays;
       if (sortBy === 'Newest') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -61,6 +81,8 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
     setActiveGenre('All');
     setMinRating(0);
     setSortBy('Popular');
+    searchParams.delete('genre');
+    setSearchParams(searchParams);
   };
 
   return (
@@ -70,23 +92,23 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
           <h1 className="text-4xl font-black font-orbitron tracking-tighter mb-2 uppercase">BROWSER GAMES</h1>
           <p className="text-slate-400">Discover and play the best browser-based games in the Arcade.</p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
-            <button 
+            <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-slate-800 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <Squares2X2Icon className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-slate-800 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <ListBulletIcon className="w-5 h-5" />
             </button>
           </div>
-          <button 
+          <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all font-bold text-sm ${isFilterOpen ? 'bg-cyan-500 text-slate-950 border-cyan-400' : 'bg-slate-900 border-slate-800 hover:bg-slate-800'}`}
           >
@@ -107,7 +129,7 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
               Reset All
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-3">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Min Rating</label>
@@ -129,7 +151,7 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Sort Results</label>
               <div className="flex flex-wrap gap-2">
                 {(['Popular', 'Newest', 'Rating'] as const).map(option => (
-                  <button 
+                  <button
                     key={option}
                     onClick={() => setSortBy(option)}
                     className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border transition-all ${sortBy === option ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400' : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'}`}
@@ -142,9 +164,9 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
 
             <div className="space-y-3">
               <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Genre</label>
-              <select 
+              <select
                 value={activeGenre}
-                onChange={(e) => setActiveGenre(e.target.value as any)}
+                onChange={(e) => handleGenreChange(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-sm focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               >
                 {genres.map(g => <option key={g} value={g}>{g}</option>)}
@@ -159,27 +181,31 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
 
       <div className="flex flex-wrap items-center gap-2 pb-4 border-b border-slate-800">
         {genres.slice(0, 8).map(genre => (
-          <button 
+          <button
             key={genre}
             onClick={() => handleGenreChange(genre as any)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
-              activeGenre === genre 
-              ? 'bg-cyan-500 text-slate-950 border-cyan-400' 
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${activeGenre === genre
+              ? 'bg-cyan-500 text-slate-950 border-cyan-400'
               : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-600'
-            }`}
+              }`}
           >
             {genre.toUpperCase()}
           </button>
         ))}
       </div>
 
-      <div className={viewMode === 'grid' 
+      <div className={viewMode === 'grid'
         ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         : "flex flex-col gap-4"
       }>
-        {filteredGames.length > 0 ? (
+        {isLoading ? (
+          <div className="col-span-full py-20 text-center">
+            <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-400 font-bold uppercase tracking-widest animate-pulse">Scanning database...</p>
+          </div>
+        ) : filteredGames.length > 0 ? (
           filteredGames.map(game => (
-            viewMode === 'grid' 
+            viewMode === 'grid'
               ? <GameCard key={game.id} game={game} />
               : (
                 <div key={game.id} className="group bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-6 hover:border-cyan-500/50 transition-all cursor-pointer">
@@ -190,7 +216,7 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
                       <span className="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-black uppercase text-cyan-400">{game.genre}</span>
                       <span className="flex items-center gap-1"><StarSolid className="w-3 h-3 text-yellow-500" /> {game.rating}</span>
                       <span>By {game.creator}</span>
-                      <span>{(game.plays/1000).toFixed(1)}k Plays</span>
+                      <span>{(game.plays / 1000).toFixed(1)}k Plays</span>
                     </div>
                   </div>
                   <button className="px-6 py-2 bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 rounded-xl font-bold transition-all text-sm uppercase">
@@ -206,7 +232,7 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
             </div>
             <p className="text-slate-400 font-bold text-xl uppercase tracking-widest font-orbitron">No games found</p>
             <p className="text-slate-500">Try adjusting your filters to find what you're looking for.</p>
-            <button 
+            <button
               onClick={clearFilters}
               className="px-6 py-2 border border-cyan-500 text-cyan-500 hover:bg-cyan-500 hover:text-slate-950 transition-all font-black rounded-xl uppercase text-xs tracking-widest"
             >
@@ -218,7 +244,7 @@ export const Catalog: React.FC<CatalogProps> = ({ games }) => {
 
       {filteredGames.length > 0 && (
         <div className="pt-10 flex flex-col items-center gap-8">
-           <button className="px-8 py-4 bg-slate-900 border border-slate-800 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center gap-3 group">
+          <button className="px-8 py-4 bg-slate-900 border border-slate-800 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center gap-3 group">
             Load More Games
             <ChevronDownIcon className="w-4 h-4 group-hover:translate-y-1 transition-transform" />
           </button>

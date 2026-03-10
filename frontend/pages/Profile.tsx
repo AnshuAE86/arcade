@@ -34,28 +34,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
   const [editRole, setEditRole] = useState<'Player' | 'Creator'>(user?.role || 'Player');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '');
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (user?.id) {
-        try {
-          const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
-          const response = await fetch(`${BACKEND_URL}/users/${user.id}`);
-          if (response.ok) {
-            const latestUser = await response.json();
-            onUpdateProfile(latestUser);
-          }
-        } catch (error) {
-          console.error('Error fetching profile:', error);
-        }
-      }
-    };
-
-    fetchProfile();
-  }, [user?.id]);
-
   if (!user) return <div className="p-20 text-center">Please login to view profile.</div>;
 
-  const myGames = games.filter(g => g.creator === user.name || g.creator === 'CyberGhost');
+  const myGames = games.filter(g => g.creator === user.name);
   const libraryGames = games.filter(g => user.library?.includes(g.id) || false);
 
   // Dynamic EXP Calculation
@@ -256,10 +237,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Games Created', value: myGames.length, icon: ChartBarIcon, color: 'text-cyan-400' },
-          { label: 'Library Size', value: libraryGames.length, icon: BookmarkIcon, color: 'text-fuchsia-400' },
-          { label: 'Total Plays', value: user.gamesPlayed, icon: PlayIcon, color: 'text-yellow-400' },
-          { label: 'Followers', value: '1.2k', icon: ChartBarIcon, color: 'text-indigo-400' },
+          { label: 'Games Created', value: user.gamesCreated || 0, icon: ChartBarIcon, color: 'text-cyan-400' },
+          { label: 'Library Size', value: user.library?.length || 0, icon: BookmarkIcon, color: 'text-fuchsia-400' },
+          { label: 'Total Plays', value: user.gamesPlayed || 0, icon: PlayIcon, color: 'text-yellow-400' },
+          { label: 'Followers', value: user.followers || 0, icon: ChartBarIcon, color: 'text-indigo-400' },
         ].map((stat, i) => (
           <div key={i} className="p-6 rounded-3xl bg-slate-900/50 border border-slate-800 text-center">
             <stat.icon className={`w-6 h-6 ${stat.color} mx-auto mb-3`} />

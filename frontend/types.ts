@@ -54,6 +54,7 @@ export interface User {
   referralCount?: number;
   exp?: number;
   recentlyPlayed?: string[]; // Last 7 game IDs
+  followers?: number;
 }
 
 export interface Quest {

@@ -19,15 +19,16 @@ import {
 } from '@heroicons/react/24/outline';
 import { Game, User } from '../types';
 import { GoogleGenAI } from "@google/genai";
-import { supabase } from '../App';
+import { supabase } from '../supabase';
 
 interface HomeProps {
   games: Game[];
+  featuredGames?: Game[];
   user: User | null;
   onDemoLogin: (role: 'Player' | 'Creator' | 'Guest') => void;
 }
 
-export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
+export const Home: React.FC<HomeProps> = ({ games, featuredGames: backendFeaturedGames, user, onDemoLogin }) => {
   const [aiIdea, setAiIdea] = useState<string>("");
   const [isIdeaLoading, setIsIdeaLoading] = useState(false);
 
@@ -45,7 +46,10 @@ export const Home: React.FC<HomeProps> = ({ games, user, onDemoLogin }) => {
     }
   };
 
-  const featuredGames = games.filter(g => g.isFeatured);
+  const featuredGames = backendFeaturedGames && backendFeaturedGames.length > 0
+    ? backendFeaturedGames
+    : games.filter(g => g.isFeatured);
+
   const trending = games.slice(0, 4); // Added trending games
   const recentlyPlayedGames = user
     ? (user.recentlyPlayed || []).map(id => games.find(g => g.id === id)).filter(Boolean) as Game[]

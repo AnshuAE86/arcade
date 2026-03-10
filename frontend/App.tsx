@@ -1,87 +1,131 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Home, GamePlay, Catalog, Profile, Challenges, CreatorZone, Login, Launch, Zones, Leaderboards, Quests, Raffles, Dashboard } from './pages';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Chat from './components/Chat';
-import { MOCK_USER, MOCK_GAMES, MOCK_QUESTS } from './constants';
+import { MOCK_USER, MOCK_QUESTS } from './constants';
 import { User, Game, Quest } from './types';
-import { createClient } from '@supabase/supabase-js';
-
-// Secure initialization: Use placeholders if env vars are missing to prevent crash
-// Exported supabaseUrl to resolve undefined errors in troubleshooting views
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase, supabaseUrl } from './supabase';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [games, setGames] = useState<Game[]>(MOCK_GAMES);
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [games, setGames] = useState<Game[]>([]);
+  const [featuredGames, setFeaturedGames] = useState<Game[]>([]);
+  const [leaderboardGames, setLeaderboardGames] = useState<Game[]>([]);
+  const [weeklyLeaderboardGames, setWeeklyLeaderboardGames] = useState<Game[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
+  const [isSidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // Sync user with backend
-  const syncUserToBackend = async (userData: User) => {
-    console.log('Attempting to sync user to backend:', userData.id);
+  // Fetch games from backend for browse/catalog
+  const fetchGamesFromBackend = async (genre?: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to sync user to backend:', errorData);
-      } else {
-        const syncedUser = await response.json();
-        console.log('User synced successfully:', syncedUser);
-        setUser(syncedUser);
+      const url = genre ? `${BACKEND_URL}/games/browse?genre=${genre}` : `${BACKEND_URL}/games/browse`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setGames(data);
       }
     } catch (error) {
-      console.error('Error syncing user to backend:', error);
+      console.error('Error fetching games:', error);
+    }
+  };
+
+  // Fetch featured games from backend
+  const fetchFeaturedGamesFromBackend = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/games/featured?limit=5`);
+      if (response.ok) {
+        const data = await response.json();
+        setFeaturedGames(data);
+      }
+    } catch (error) {
+      console.error('Error fetching featured games:', error);
+    }
+  };
+
+  // Fetch leaderboard games from backend
+  const fetchLeaderboardFromBackend = async () => {
+    try {
+      const playsResponse = await fetch(`${BACKEND_URL}/games/leaderboard?limit=5&sort_by=plays`);
+      if (playsResponse.ok) {
+        const data = await playsResponse.json();
+        setLeaderboardGames(data);
+      }
+
+      const weeklyResponse = await fetch(`${BACKEND_URL}/games/leaderboard?limit=5&sort_by=weeklyPlays`);
+      if (weeklyResponse.ok) {
+        const data = await weeklyResponse.json();
+        setWeeklyLeaderboardGames(data);
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
+
+  // Fetch genres from backend
+  const fetchGenresFromBackend = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/games/genres`);
+      if (response.ok) {
+        const data = await response.json();
+        setGenres(data);
+      }
+    } catch (error) {
+      console.error('Error fetching genres:', error);
+    }
+  };
+
+  // Fetch user profile from backend
+  const fetchUserFromBackend = async (userId: string) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/users/${userId}`);
+      if (response.ok) {
+        const profile = await response.json();
+        setUser(profile);
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
   // Helper to check if we are using a real Supabase instance
   const isSupabaseConfigured = !supabaseUrl.includes('placeholder-project');
 
-  const mapSupabaseUser = (sbUser: any): User => ({
-    id: sbUser.id,
-    name: sbUser.user_metadata?.full_name || sbUser.email?.split('@')[0] || 'Gamer',
-    avatar: sbUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sbUser.id}`,
-    role: 'Player',
-    email: sbUser.email,
-    referralCode: `ARC-${sbUser.id.substring(0, 5).toUpperCase()}`,
-    // All other fields will be null in the DB
-  });
-
   useEffect(() => {
+    fetchGamesFromBackend();
+    fetchFeaturedGamesFromBackend();
+    fetchLeaderboardFromBackend();
+    fetchGenresFromBackend();
+
     if (isSupabaseConfigured) {
       // Check initial session
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
-          const mapped = mapSupabaseUser(session.user);
-          setUser(mapped);
-          syncUserToBackend(mapped);
+          fetchUserFromBackend(session.user.id);
+        } else {
+          setIsAuthLoading(false);
         }
       });
 
-      // Listen for auth changes (Crucial for handling Magic Link redirects)
+      // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
-          const mapped = mapSupabaseUser(session.user);
-          setUser(mapped);
-          syncUserToBackend(mapped);
+          fetchUserFromBackend(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setIsAuthLoading(false);
         }
       });
 
       return () => subscription.unsubscribe();
+    } else {
+      setIsAuthLoading(false);
     }
   }, [isSupabaseConfigured]);
 
@@ -94,19 +138,39 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     } else {
       setUser(null);
     }
-  };
+  }, [isSupabaseConfigured]);
 
-  const handleUpdateProfile = (updatedUser: Partial<User>) => {
-    if (user) setUser({ ...user, ...updatedUser });
-  };
+  const handleUpdateProfile = useCallback(async (updatedUser: Partial<User>) => {
+    if (!user) return;
 
-  const handleDemoLogin = (role: 'Player' | 'Creator' | 'Guest') => {
+    // Optimistic update
+    const newUser = { ...user, ...updatedUser };
+    setUser(newUser);
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedUser),
+      });
+      if (!response.ok) {
+        console.error('Failed to update profile in backend');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  }, [user]);
+
+  const handleDemoLogin = useCallback((role: 'Player' | 'Creator' | 'Guest') => {
+    setIsAuthLoading(false);
     if (role === 'Guest') {
       setUser(null);
     } else {
@@ -124,61 +188,88 @@ const App: React.FC = () => {
         recentlyPlayed: ['1', '2']
       });
     }
-  };
+  }, []);
 
-  const addToRecentlyPlayed = (gameId: string) => {
+  const addToRecentlyPlayed = useCallback((gameId: string) => {
     if (!user) return;
     const current = user.recentlyPlayed || [];
     const filtered = current.filter(id => id !== gameId);
     const updated = [gameId, ...filtered].slice(0, 7);
     setUser({ ...user, recentlyPlayed: updated });
-  };
+  }, [user]);
 
-  const addGame = (newGame: Game) => setGames(prev => [newGame, ...prev]);
+  const addGame = useCallback((newGame: Game) => setGames(prev => [newGame, ...prev]), []);
 
-  const toggleLibraryGame = (gameId: string) => {
+  const toggleLibraryGame = useCallback(async (gameId: string) => {
     if (!user) return;
     const inLibrary = user.library?.includes(gameId) || false;
     const newLibrary = inLibrary
       ? (user.library || []).filter(id => id !== gameId)
       : [...(user.library || []), gameId];
+
+    // Optimistic update
     setUser({ ...user, library: newLibrary });
-  };
 
-  const rewardUser = (amount: number, type: 'vibe' | 'arcade' = 'vibe') => {
-    if (user) {
-      setUser({
-        ...user,
-        vibeTokens: type === 'vibe' ? (user.vibeTokens || 0) + amount : user.vibeTokens,
-        arcadeCoins: type === 'arcade' ? (user.arcadeCoins || 0) + amount : user.arcadeCoins,
-        gamesPlayed: (user.gamesPlayed || 0) + 1
+    try {
+      const response = await fetch(`${BACKEND_URL}/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ library: newLibrary }),
       });
-    }
-  };
-
-  const updateQuestProgress = (category: Quest['category'], amount: number) => {
-    if (!user) return;
-
-    const updatedProgress = { ...user.questProgress };
-    let changed = false;
-
-    MOCK_QUESTS.forEach(quest => {
-      if (quest.category === category && !(user.completedQuests || []).includes(quest.id)) {
-        const currentProgress = updatedProgress[quest.id] || 0;
-        if (currentProgress < quest.target) {
-          updatedProgress[quest.id] = Math.min(currentProgress + amount, quest.target);
-          changed = true;
-        }
+      if (!response.ok) {
+        console.error('Failed to update library in backend');
       }
-    });
-
-    if (changed) {
-      setUser({ ...user, questProgress: updatedProgress });
+    } catch (error) {
+      console.error('Error updating library:', error);
     }
-  };
+  }, [user]);
+
+  const rewardUser = useCallback((amount: number, type: 'vibe' | 'arcade' = 'vibe') => {
+    setUser(prevUser => {
+      if (!prevUser) return null;
+      return {
+        ...prevUser,
+        vibeTokens: type === 'vibe' ? (prevUser.vibeTokens || 0) + amount : prevUser.vibeTokens,
+        arcadeCoins: type === 'arcade' ? (prevUser.arcadeCoins || 0) + amount : prevUser.arcadeCoins,
+        gamesPlayed: (prevUser.gamesPlayed || 0) + 1
+      };
+    });
+  }, []);
+
+  const updateQuestProgress = useCallback((category: Quest['category'], amount: number) => {
+    setUser(prevUser => {
+      if (!prevUser) return null;
+
+      const updatedProgress = { ...prevUser.questProgress };
+      let changed = false;
+
+      MOCK_QUESTS.forEach(quest => {
+        if (quest.category === category && !(prevUser.completedQuests || []).includes(quest.id)) {
+          const currentProgress = updatedProgress[quest.id] || 0;
+          if (currentProgress < quest.target) {
+            updatedProgress[quest.id] = Math.min(currentProgress + amount, quest.target);
+            changed = true;
+          }
+        }
+      });
+
+      if (changed) {
+        return { ...prevUser, questProgress: updatedProgress };
+      }
+      return prevUser;
+    });
+  }, []);
 
   // Guard for registered users
   const ProtectedRoute = ({ children, requireCreator = false }: { children: React.ReactNode, requireCreator?: boolean }) => {
+    if (isAuthLoading && !user) return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+      </div>
+    );
+
     if (!user) return <Login onLogin={setUser} />;
     if (requireCreator && user.role !== 'Creator') {
       return (
@@ -200,16 +291,17 @@ const App: React.FC = () => {
           toggle={() => setSidebarOpen(!isSidebarOpen)}
           user={user}
           onDemoLogin={handleDemoLogin}
+          genres={genres}
         />
 
         <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-64' : ''}`}>
-          <Navbar user={user} onLogout={handleLogout} />
+          <Navbar user={user} onLogout={handleLogout} onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)} />
 
           <main className="flex-1 overflow-y-auto">
             <Routes>
-              <Route path="/" element={<Home games={games} user={user} onDemoLogin={handleDemoLogin} />} />
-              <Route path="/catalog" element={<Catalog games={games} />} />
-              <Route path="/leaderboards" element={<Leaderboards games={games} />} />
+              <Route path="/" element={<Home games={games} featuredGames={featuredGames} user={user} onDemoLogin={handleDemoLogin} />} />
+              <Route path="/catalog" element={<Catalog genres={genres} />} />
+              <Route path="/leaderboards" element={<Leaderboards games={leaderboardGames} weeklyGames={weeklyLeaderboardGames} />} />
               <Route path="/zones" element={<Zones />} />
               <Route path="/challenges" element={
                 <ProtectedRoute requireCreator>
@@ -244,7 +336,7 @@ const App: React.FC = () => {
                   <Profile user={user} games={games} onUpdateProfile={handleUpdateProfile} />
                 </ProtectedRoute>
               } />
-              <Route path="/game/:id" element={<GamePlay user={user} rewardUser={rewardUser} updateQuestProgress={updateQuestProgress} toggleLibrary={toggleLibraryGame} games={games} userLibrary={user?.library || []} onToggleLibrary={toggleLibraryGame} onLaunch={(id) => addToRecentlyPlayed(id)} />} />
+              <Route path="/game/:id" element={<GamePlay user={user} onPlayComplete={rewardUser} updateQuestProgress={updateQuestProgress} games={games} userLibrary={user?.library || []} onToggleLibrary={toggleLibraryGame} onLaunch={addToRecentlyPlayed} />} />
               <Route path="/login" element={<Login onLogin={setUser} />} />
             </Routes>
           </main>

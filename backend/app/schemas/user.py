@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_snake
 from typing import List, Optional, Dict
 
 class UserBase(BaseModel):
@@ -21,6 +22,12 @@ class UserBase(BaseModel):
     referralCount: Optional[int] = 0
     exp: Optional[int] = 0
     recentlyPlayed: Optional[List[str]] = []
+    followers: Optional[int] = 0
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        from_attributes=True
+    )
 
 class UserCreate(UserBase):
     id: str
@@ -45,12 +52,28 @@ class UserUpdate(BaseModel):
     referralCount: Optional[int] = None
     exp: Optional[int] = None
     recentlyPlayed: Optional[List[str]] = None
+    followers: Optional[int] = None
 
-class UserInDBBase(UserBase):
+    model_config = ConfigDict(
+        populate_by_name=True
+    )
+
+class User(UserBase):
     id: str
 
-    class Config:
-        from_attributes = True
+class SpinResult(BaseModel):
+    randomIndex: int
+    wonAmount: int
+    newBalance: int
+    lastSpinDate: str
 
-class User(UserInDBBase):
-    pass
+class SpinStatus(BaseModel):
+    canSpin: bool
+    hoursLeft: float
+    message: str
+
+class CreatorStats(BaseModel):
+    name: str
+    avatar: Optional[str] = None
+    totalPlays: int
+    gamesCount: int
