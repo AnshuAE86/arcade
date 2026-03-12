@@ -25,6 +25,7 @@ export interface Game {
   weeklyPlays: number; // Added for weekly leaderboard
   rating: number;
   creator: string;
+  creatorId: string;
   iframeUrl: string;
   tags: string[];
   createdAt: string;
@@ -50,6 +51,7 @@ export interface User {
   };
   completedQuests?: string[];
   isPremium?: boolean;
+  extraSpins?: number;
   referralCode: string;
   referralCount?: number;
   exp?: number;
@@ -79,6 +81,7 @@ export interface Raffle {
   maxEntries?: number;
   endDate: string;
   image: string;
+  isEntered?: boolean;
 }
 
 export interface ChatMessage {

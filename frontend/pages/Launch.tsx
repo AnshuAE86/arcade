@@ -9,8 +9,8 @@ interface LaunchProps {
 }
 
 export const Launch: React.FC<LaunchProps> = ({ user, games }) => {
-  const myGames = games.filter(g => g.creator === user?.name);
-  
+  const myGames = games.filter(g => g.creatorId === user?.id);
+
   const requirements = [
     { name: "Total Plays", target: "50,000+", current: myGames.reduce((acc, g) => acc + g.plays, 0).toLocaleString(), met: myGames.reduce((acc, g) => acc + g.plays, 0) >= 50000 },
     { name: "Verified Creator Status", target: "Verified", current: user?.role === 'Creator' ? "Verified" : "Pending", met: user?.role === 'Creator' },

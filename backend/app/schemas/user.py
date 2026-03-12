@@ -1,23 +1,25 @@
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_snake
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 
 class UserBase(BaseModel):
     name: str
     avatar: str
-    role: str = "Player"
+    role: Literal["Player", "Creator"] = "Player"
     walletAddress: Optional[str] = None
     email: Optional[str] = None
     vibeTokens: Optional[int] = 0
     arcadeCoins: Optional[int] = 0
     gamesPlayed: Optional[int] = 0
     gamesCreated: Optional[int] = 0
+    totalPlays: Optional[int] = 0
     challengePoints: Optional[int] = 0
     library: Optional[List[str]] = []
     lastSpinDate: Optional[str] = None
     questProgress: Optional[Dict[str, int]] = {}
     completedQuests: Optional[List[str]] = []
     isPremium: Optional[bool] = False
+    extraSpins: Optional[int] = 0
     referralCode: str
     referralCount: Optional[int] = 0
     exp: Optional[int] = 0
@@ -35,17 +37,19 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     avatar: Optional[str] = None
-    role: Optional[str] = None
+    role: Optional[Literal["Player", "Creator"]] = None
     walletAddress: Optional[str] = None
     email: Optional[str] = None
     vibeTokens: Optional[int] = None
     arcadeCoins: Optional[int] = None
     gamesPlayed: Optional[int] = None
     gamesCreated: Optional[int] = None
+    totalPlays: Optional[int] = None
     challengePoints: Optional[int] = None
     library: Optional[List[str]] = None
     lastSpinDate: Optional[str] = None
     questProgress: Optional[Dict[str, int]] = None
+    extraSpins: Optional[int] = None
     completedQuests: Optional[List[str]] = None
     isPremium: Optional[bool] = None
     referralCode: Optional[str] = None
@@ -66,6 +70,7 @@ class SpinResult(BaseModel):
     wonAmount: int
     newBalance: int
     lastSpinDate: str
+    extraSpins: int
 
 class SpinStatus(BaseModel):
     canSpin: bool

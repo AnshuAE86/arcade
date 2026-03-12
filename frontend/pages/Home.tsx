@@ -163,7 +163,7 @@ export const Home: React.FC<HomeProps> = ({ games, featuredGames: backendFeature
       </section>
 
       {/* AD SPOT 1 */}
-      <AdUnit slot="home-top-1" />
+      <AdUnit slot="home-top-1" isPremium={user?.isPremium} />
 
       <section>
         <div className="flex items-center justify-between mb-6">
@@ -247,7 +247,7 @@ export const Home: React.FC<HomeProps> = ({ games, featuredGames: backendFeature
       </section>
 
       {/* AD SPOT 2 */}
-      <AdUnit slot="home-footer-1" />
+      <AdUnit slot="home-footer-1" isPremium={user?.isPremium} />
     </div>
   );
 };

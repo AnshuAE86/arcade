@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { MOCK_USER, MOCK_QUESTS } from '../constants';
 import { User } from '../types';
+import { authenticatedFetch } from '../utils/api';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
 
@@ -23,7 +24,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
   useEffect(() => {
     const checkCanSpin = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/users/${user.id}/spin-status`);
+        const response = await authenticatedFetch(`${BACKEND_URL}/users/${user.id}/spin-status`);
         if (response.ok) {
           const status = await response.json();
           setCanSpin(status.canSpin);
@@ -48,14 +49,19 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
 
   const handleSpin = async (isPaid: boolean = false) => {
     if (isSpinning) return;
-    if (!isPaid && !canSpin) return;
+
+    // Check if we can spin (Free, Extra Ticket, or Paid)
+    const hasExtraTicket = (user.extraSpins || 0) > 0;
+    const canUseFreeOrTicket = canSpin || hasExtraTicket;
+
+    if (!isPaid && !canUseFreeOrTicket) return;
     if (isPaid && user.arcadeCoins < 50) return;
 
     setIsSpinning(true);
     setResult(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/users/${user.id}/spin?is_paid=${isPaid}`, {
+      const response = await authenticatedFetch(`${BACKEND_URL}/users/${user.id}/spin?is_paid=${isPaid}`, {
         method: 'POST',
       });
 
@@ -63,17 +69,12 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
         throw new Error('Failed to spin wheel');
       }
 
-      const { randomIndex, wonAmount, newBalance, lastSpinDate } = await response.json();
+      const { randomIndex, wonAmount, newBalance, lastSpinDate, extraSpins: updatedExtraSpins } = await response.json();
 
-      // Calculate exact rotation to land on the center of that sector
-      // sectors are clockwise from top, so we need to account for that
-      // Sector 0 is at 0 degrees (top), Sector 1 is at 45 degrees, etc.
-      // The wheel pointer is at the top. 
-      // To land on sector i, the wheel must rotate (360 - (i * sectorSize)) degrees
       const sectorSize = 360 / prizes.length;
       const targetSectorRotation = 360 - (randomIndex * sectorSize);
-      const extraSpins = 360 * 10; // 10 full rotations for drama
-      const finalRotation = rotation + extraSpins + targetSectorRotation - (rotation % 360);
+      const rotationDrama = 360 * 10;
+      const finalRotation = rotation + rotationDrama + targetSectorRotation - (rotation % 360);
 
       setRotation(finalRotation);
 
@@ -89,7 +90,7 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
 
           const updatedProgress = { ...prev.questProgress };
           MOCK_QUESTS.forEach(q => {
-            if (q.category === 'spin-wheel' && !prev.completedQuests.includes(q.id)) {
+            if (q.category === 'spin-wheel' && !prev.completedQuests?.includes(q.id)) {
               updatedProgress[q.id] = Math.min((updatedProgress[q.id] || 0) + 1, q.target);
             }
           });
@@ -97,15 +98,17 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
           return {
             ...prev,
             arcadeCoins: newBalance,
+            extraSpins: updatedExtraSpins,
             questProgress: updatedProgress,
-            lastSpinDate: isPaid ? prev.lastSpinDate : lastSpinDate
+            lastSpinDate: isPaid || (hasExtraTicket && !canSpin) ? prev.lastSpinDate : lastSpinDate
           };
         });
 
-        if (!isPaid) {
+        // Only disable free spin if it was a free spin (not paid, not ticket)
+        if (!isPaid && canSpin) {
           setCanSpin(false);
         }
-      }, 5000); // Longer duration for drama
+      }, 5000);
     } catch (error) {
       console.error('Spin error:', error);
       setIsSpinning(false);
@@ -203,22 +206,34 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
 
         <button
           onClick={() => handleSpin(false)}
-          disabled={!canSpin || isSpinning}
-          className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${!canSpin || isSpinning
+          disabled={(!canSpin && (user.extraSpins || 0) === 0) || isSpinning}
+          className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex flex-col items-center justify-center ${(!canSpin && (user.extraSpins || 0) === 0) || isSpinning
             ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600'
             : 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-fuchsia-500 text-white hover:scale-105 shadow-xl shadow-indigo-500/25 active:scale-95'
             }`}
         >
-          {isSpinning ? (
-            <ArrowPathIcon className="w-6 h-6 animate-spin" />
-          ) : canSpin ? (
-            'FREE DAILY SPIN'
-          ) : (
-            `NEXT FREE SPIN IN ${countdown}`
+          <div className="flex items-center gap-3">
+            {isSpinning ? (
+              <ArrowPathIcon className="w-6 h-6 animate-spin" />
+            ) : canSpin ? (
+              'FREE DAILY SPIN'
+            ) : (user.extraSpins || 0) > 0 ? (
+              <>
+                <SparklesIcon className="w-6 h-6 text-yellow-400" />
+                USE EXTRA TICKET
+              </>
+            ) : (
+              `NEXT FREE SPIN IN ${countdown}`
+            )}
+          </div>
+          {(user.extraSpins || 0) > 0 && !isSpinning && (
+            <span className="text-[10px] font-black opacity-80 mt-1 uppercase tracking-widest">
+              You have {user.extraSpins} tickets
+            </span>
           )}
         </button>
 
-        {!canSpin && !isSpinning && (
+        {!canSpin && (user.extraSpins || 0) === 0 && !isSpinning && (
           <button
             onClick={() => handleSpin(true)}
             disabled={user.arcadeCoins < 50}
@@ -232,9 +247,9 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ user, setUser }) => {
           </button>
         )}
 
-        {!canSpin && !isSpinning && (
+        {(!canSpin && (user.extraSpins || 0) === 0) && !isSpinning && (
           <p className="text-center text-xs text-slate-500 uppercase tracking-widest">
-            Wait for the daily reset or spin again with coins!
+            Wait for the daily reset, buy tickets in shop, or spin with coins!
           </p>
         )}
       </div>

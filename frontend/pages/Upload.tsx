@@ -113,6 +113,7 @@ export const Upload: React.FC<UploadProps> = ({ user, onUpload }) => {
       weeklyPlays: 0,
       rating: 5.0,
       creator: user?.name || "Guest",
+      creatorId: user?.id || "",
       iframeUrl: "https://www.crazygames.com/embed/polytrack", // placeholder
       tags: tags.split(",").map(t => t.trim()),
       createdAt: new Date().toISOString(),

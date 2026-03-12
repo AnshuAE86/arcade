@@ -84,36 +84,25 @@ class CRUDGame:
 
     def get_top_creators(self, db: Client, limit: int = 10) -> List[dict]:
         try:
-            # Join with arcade_users to get the actual avatar and use UUID (creator_id)
-            # Assuming arcade_games.creator_id links to arcade_users.id
-            response = db.table("arcade_games").select("plays, arcade_users(id, name, avatar)").execute()
-            games = response.data if hasattr(response, 'data') else []
+            # High-performance centralized approach:
+            # Fetch directly from arcade_users where stats are maintained by triggers
+            response = db.table("arcade_users") \
+                .select("name, avatar, totalPlays, gamesCreated") \
+                .order("totalPlays", desc=True) \
+                .limit(limit) \
+                .execute()
             
-            creator_stats = {}
-            for game in games:
-                user_info = game.get("arcade_users")
-                if not user_info:
-                    continue
-                
-                user_id = user_info.get("id")
-                name = user_info.get("name")
-                avatar = user_info.get("avatar")
-                plays = game.get("plays") or 0
-                
-                if user_id not in creator_stats:
-                    creator_stats[user_id] = {
-                        "name": name, 
-                        "avatar": avatar,
-                        "totalPlays": 0, 
-                        "gamesCount": 0
-                    }
-                creator_stats[user_id]["totalPlays"] += plays
-                creator_stats[user_id]["gamesCount"] += 1
-            
-            # Sort by totalPlays and limit
-            sorted_creators = sorted(creator_stats.values(), key=lambda x: x["totalPlays"], reverse=True)
-            return sorted_creators[:limit]
+            creators = []
+            for user in (response.data if hasattr(response, 'data') else []):
+                creators.append({
+                    "name": user.get("name"),
+                    "avatar": user.get("avatar"),
+                    "totalPlays": user.get("totalPlays") or 0,
+                    "gamesCount": user.get("gamesCreated") or 0
+                })
+            return creators
         except Exception:
+            # Fallback to empty list or you could implement the manual aggregation here
             return []
 
 game = CRUDGame()

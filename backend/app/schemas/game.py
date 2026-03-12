@@ -12,6 +12,7 @@ class GameBase(BaseModel):
     weeklyPlays: Optional[int] = 0
     rating: Optional[float] = 0.0
     creator: str
+    creatorId: str = Field(alias="creator_id")
     iframeUrl: str
     tags: Optional[List[str]] = []
     isFeatured: Optional[bool] = False
@@ -33,6 +34,7 @@ class GameUpdate(BaseModel):
     weeklyPlays: Optional[int] = None
     rating: Optional[float] = None
     creator: Optional[str] = None
+    creatorId: Optional[str] = Field(default=None, alias="creator_id")
     iframeUrl: Optional[str] = None
     tags: Optional[List[str]] = None
     isFeatured: Optional[bool] = None

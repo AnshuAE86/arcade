@@ -8,3 +8,7 @@ ENV/
 .env
 .pytest_cache/
 .python-version
+
+# Database local backups
+db/sql/
+

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app import crud, schemas
 from app.db.supabase import get_supabase
+from app.api.deps import get_current_user
 from supabase import Client
 from typing import List, Any, Optional
 
@@ -11,7 +12,8 @@ def read_games(
     db: Client = Depends(get_supabase),
     skip: int = 0,
     limit: int = 100,
-    genre: Optional[str] = None
+    genre: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Retrieve games.
@@ -22,7 +24,8 @@ def read_games(
 @router.get("/featured", response_model=List[schemas.game.Game])
 def read_featured_games(
     db: Client = Depends(get_supabase),
-    limit: int = 5
+    limit: int = 5,
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Retrieve top featured games.
@@ -32,7 +35,8 @@ def read_featured_games(
 @router.get("/browse", response_model=List[schemas.game.Game])
 def browse_games(
     db: Client = Depends(get_supabase),
-    genre: Optional[str] = None
+    genre: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Retrieve games for the catalog, optionally prioritizing a genre.
@@ -43,7 +47,8 @@ def browse_games(
 def read_leaderboard(
     db: Client = Depends(get_supabase),
     limit: int = 5,
-    sort_by: str = "plays"
+    sort_by: str = "plays",
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Retrieve top games by plays or weeklyPlays.
@@ -53,7 +58,8 @@ def read_leaderboard(
 @router.get("/leaderboard/top-creators", response_model=List[schemas.user.CreatorStats])
 def read_top_creators(
     db: Client = Depends(get_supabase),
-    limit: int = 10
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Retrieve top creators by total reach (sum of plays).
@@ -62,7 +68,8 @@ def read_top_creators(
 
 @router.get("/genres", response_model=List[str])
 def read_genres(
-    db: Client = Depends(get_supabase)
+    db: Client = Depends(get_supabase),
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Retrieve unique genres.
@@ -73,7 +80,8 @@ def read_genres(
 def read_game(
     *,
     db: Client = Depends(get_supabase),
-    id: str
+    id: str,
+    current_user: dict = Depends(get_current_user)
 ) -> Any:
     """
     Get game by ID.

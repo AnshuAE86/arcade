@@ -12,6 +12,7 @@ import {
   StarIcon as StarOutline
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import { authenticatedFetch } from '../utils/api';
 
 interface CatalogProps {
   genres: string[];
@@ -39,7 +40,7 @@ export const Catalog: React.FC<CatalogProps> = ({ genres: availableGenres }) => 
       const url = genre === 'All'
         ? `${BACKEND_URL}/games/browse`
         : `${BACKEND_URL}/games/browse?genre=${encodeURIComponent(genre)}`;
-      const response = await fetch(url);
+      const response = await authenticatedFetch(url);
       if (response.ok) {
         const data = await response.json();
         setGames(data);

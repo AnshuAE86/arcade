@@ -5,7 +5,10 @@ import {
   MagnifyingGlassIcon,
   BellIcon,
   ArrowRightOnRectangleIcon,
-  XMarkIcon
+  XMarkIcon,
+  UserIcon,
+  SparklesIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 
@@ -70,6 +73,19 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
         </div>
 
         <div className="flex items-center gap-3">
+          {user && (
+            <div className="hidden sm:flex items-center gap-4 px-4 py-1.5 bg-slate-900/80 rounded-2xl border border-slate-800 mr-2">
+              <div className="flex items-center gap-2">
+                <SparklesIcon className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm font-black text-white">{user.arcadeCoins}</span>
+              </div>
+              <div className="w-[1px] h-4 bg-slate-800"></div>
+              <div className="flex items-center gap-2">
+                <BoltIcon className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-black text-white">{calculateLevel(user.exp)}</span>
+              </div>
+            </div>
+          )}
           {user ? (
             <>
               {/* Removed Wallet Button as it was the item directly left of the bell */}
@@ -116,6 +132,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onToggleSidebar, onLogout }) => {
                   <img
                     src={user.avatar}
                     alt={user.name}
+                    referrerPolicy="no-referrer"
                     className="w-10 h-10 rounded-xl border border-slate-700 bg-slate-800 object-cover"
                   />
                 </Link>

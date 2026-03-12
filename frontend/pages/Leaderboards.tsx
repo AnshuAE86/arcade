@@ -12,6 +12,7 @@ import {
   CalendarDaysIcon
 } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
+import { authenticatedFetch } from '../utils/api';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
 
@@ -36,7 +37,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games, weeklyGames }
   useEffect(() => {
     const fetchTopCreators = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/games/leaderboard/top-creators`);
+        const response = await authenticatedFetch(`${BACKEND_URL}/games/leaderboard/top-creators`);
         if (response.ok) {
           const data = await response.json();
           setTopCreators(data);
@@ -48,7 +49,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games, weeklyGames }
 
     const fetchTopPlayers = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/users/leaderboard/top-players`);
+        const response = await authenticatedFetch(`${BACKEND_URL}/users/leaderboard/top-players`);
         if (response.ok) {
           const data = await response.json();
           setTopPlayers(data);
@@ -155,6 +156,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ games, weeklyGames }
                             activeMetric === 'creator' ? (item.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.name}`)
                               : (item as Game).thumbnail
                           }
+                          referrerPolicy="no-referrer"
                           className="w-full h-full object-cover"
                           alt=""
                         />

@@ -16,6 +16,9 @@ import {
   BoltIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
+import { authenticatedFetch } from '../utils/api';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
 
 interface ProfileProps {
   user: User | null;
@@ -23,7 +26,7 @@ interface ProfileProps {
   onUpdateProfile: (updated: Partial<User>) => void;
 }
 
-type Tab = 'My Games' | 'Library' | 'Collections' | 'Analytics';
+type Tab = 'My Games' | 'Library' | 'Purchases' | 'Collections' | 'Analytics';
 
 export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }) => {
   const navigate = useNavigate();
@@ -33,10 +36,41 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
   const [editName, setEditName] = useState(user?.name || '');
   const [editRole, setEditRole] = useState<'Player' | 'Creator'>(user?.role || 'Player');
   const [editAvatar, setEditAvatar] = useState(user?.avatar || '');
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [isLoadingPurchases, setIsLoadingPurchases] = useState(false);
+
+  // Sync edit states when user data is loaded/changed
+  useEffect(() => {
+    if (user && !isEditing) {
+      setEditName(user.name);
+      setEditRole(user.role);
+      setEditAvatar(user.avatar);
+    }
+  }, [user, isEditing]);
+
+  useEffect(() => {
+    const fetchPurchases = async () => {
+      if (activeTab === 'Purchases' && user) {
+        setIsLoadingPurchases(true);
+        try {
+          const response = await authenticatedFetch(`${BACKEND_URL}/shop/my-purchases`);
+          if (response.ok) {
+            const data = await response.json();
+            setPurchases(data);
+          }
+        } catch (error) {
+          console.error("Error fetching purchases:", error);
+        } finally {
+          setIsLoadingPurchases(false);
+        }
+      }
+    };
+    fetchPurchases();
+  }, [activeTab, user]);
 
   if (!user) return <div className="p-20 text-center">Please login to view profile.</div>;
 
-  const myGames = games.filter(g => g.creator === user.name);
+  const myGames = games.filter(g => g.creatorId === user.id);
   const libraryGames = games.filter(g => user.library?.includes(g.id) || false);
 
   // Dynamic EXP Calculation
@@ -88,6 +122,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
             <img
               src={isEditing ? editAvatar : user.avatar}
               alt={user.name}
+              referrerPolicy="no-referrer"
               className={`w-32 h-32 md:w-44 md:h-44 rounded-[32px] bg-slate-900 border-4 border-slate-950 shadow-2xl transition-all object-cover ${isEditing ? 'cursor-pointer hover:brightness-75' : ''}`}
             />
             {isEditing && (
@@ -253,7 +288,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
       {/* Content Tabs */}
       <div className="space-y-8">
         <div className="flex border-b border-slate-800 gap-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          {(['My Games', 'Library', 'Collections', 'Analytics'] as Tab[]).map(tab => (
+          {(['My Games', 'Library', 'Purchases', 'Collections', 'Analytics'] as Tab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -301,6 +336,41 @@ export const Profile: React.FC<ProfileProps> = ({ user, games, onUpdateProfile }
                 </div>
               )}
             </>
+          )}
+
+          {activeTab === 'Purchases' && (
+            <div className="col-span-full space-y-4">
+              {isLoadingPurchases ? (
+                <div className="flex justify-center py-20">
+                  <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+                </div>
+              ) : purchases.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {purchases.map((purchase: any) => (
+                    <div key={purchase.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex items-center gap-6">
+                      <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center">
+                        <SparklesIcon className="w-8 h-8 text-indigo-400" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-lg font-bold text-white uppercase font-orbitron">{purchase.arcade_shop_items?.title}</h4>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{new Date(purchase.created_at).toLocaleDateString()} • {purchase.cost_paid} COINS</p>
+                      </div>
+                      <div className="px-4 py-2 bg-green-500/10 text-green-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-green-500/20">
+                        SUCCESS
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-20 text-center space-y-4">
+                  <WalletIcon className="w-16 h-16 text-slate-800 mx-auto" />
+                  <p className="text-slate-500 font-bold">You haven't purchased anything yet.</p>
+                  <button onClick={() => navigate('/raffles')} className="px-6 py-2 bg-slate-800 text-cyan-400 font-bold rounded-xl border border-slate-700 uppercase text-xs tracking-widest">
+                    Visit Shop
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === 'Collections' && (

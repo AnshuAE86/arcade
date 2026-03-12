@@ -23,6 +23,10 @@ __pycache__/
 .python-version
 *.db
 
+# Database backups
+backend/db/sql/
+
+
 # IDE
 .vscode/
 .idea/

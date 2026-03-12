@@ -79,13 +79,32 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
     return (user.completedQuests || []).includes(quest.id);
   };
 
-  const handleClaim = (quest: Quest) => {
+  const handleClaim = async (quest: Quest) => {
     if (isCompleted(quest) && !isClaimed(quest)) {
+      // 1. Optimistic Update
+      const previousUser = { ...user };
       setUser(prev => prev ? ({
         ...prev,
         arcadeCoins: (prev.arcadeCoins || 0) + quest.reward,
         completedQuests: [...(prev.completedQuests || []), quest.id]
       }) : null);
+
+      try {
+        const response = await authenticatedFetch(`${BACKEND_URL}/users/${user.id}/claim-quest?quest_id=${quest.id}&reward=${quest.reward}`, {
+          method: 'POST'
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          alert(error.detail || "Failed to claim reward");
+          // Rollback
+          setUser(previousUser);
+        }
+      } catch (error) {
+        console.error("Error claiming quest:", error);
+        // Rollback
+        setUser(previousUser);
+      }
     }
   };
 
@@ -128,8 +147,8 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-6 py-2 rounded-xl font-bold transition-all ${activeTab === tab
-                ? 'bg-cyan-500 text-slate-900'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
+              ? 'bg-cyan-500 text-slate-900'
+              : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
           >
             {tab.toUpperCase()}
@@ -176,10 +195,10 @@ export const Quests: React.FC<QuestsProps> = ({ user, setUser }) => {
                 disabled={!completed || claimed}
                 onClick={() => handleClaim(quest)}
                 className={`w-full py-3 rounded-xl font-bold transition-all ${claimed
-                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    : completed
-                      ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-900 hover:scale-[1.02] shadow-lg shadow-yellow-500/20'
-                      : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : completed
+                    ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-900 hover:scale-[1.02] shadow-lg shadow-yellow-500/20'
+                    : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                   }`}
               >
                 {claimed ? 'CLAIMED' : completed ? 'CLAIM REWARD' : 'IN PROGRESS'}

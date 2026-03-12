@@ -33,3 +33,19 @@ class RaffleUpdate(BaseModel):
 class Raffle(RaffleBase):
     id: str
     createdAt: datetime = Field(alias="created_at", default_factory=datetime.now)
+    winner_id: Optional[str] = None
+
+class RaffleEntryBase(BaseModel):
+    raffle_id: str
+    user_id: str
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )
+
+class RaffleEntryCreate(RaffleEntryBase):
+    pass
+
+class RaffleEntry(RaffleEntryBase):
+    id: str
+    created_at: datetime = Field(default_factory=datetime.now)

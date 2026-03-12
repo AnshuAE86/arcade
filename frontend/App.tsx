@@ -7,8 +7,42 @@ import Chat from './components/Chat';
 import { MOCK_USER, MOCK_QUESTS } from './constants';
 import { User, Game, Quest } from './types';
 import { supabase, supabaseUrl } from './supabase';
+import { authenticatedFetch } from './utils/api';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api/v1';
+
+// Guard for registered users
+const ProtectedRoute = ({
+  children,
+  requireCreator = false,
+  isAuthLoading,
+  user,
+  onLogin
+}: {
+  children: React.ReactNode,
+  requireCreator?: boolean,
+  isAuthLoading: boolean,
+  user: User | null,
+  onLogin: (user: User | null) => void
+}) => {
+  if (isAuthLoading && !user) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+    </div>
+  );
+
+  if (!user) return <Login onLogin={onLogin} />;
+  if (requireCreator && user.role !== 'Creator') {
+    return (
+      <div className="p-20 text-center">
+        <h1 className="text-2xl font-bold text-white mb-4 uppercase font-orbitron">Access Denied</h1>
+        <p className="text-slate-400">Only creators can access the data dashboard.</p>
+        <Link to="/" className="inline-block mt-8 px-6 py-3 bg-cyan-500 text-slate-950 font-bold rounded-xl">Go Home</Link>
+      </div>
+    );
+  }
+  return <>{children}</>;
+};
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -24,7 +58,7 @@ const App: React.FC = () => {
   const fetchGamesFromBackend = async (genre?: string) => {
     try {
       const url = genre ? `${BACKEND_URL}/games/browse?genre=${genre}` : `${BACKEND_URL}/games/browse`;
-      const response = await fetch(url);
+      const response = await authenticatedFetch(url);
       if (response.ok) {
         const data = await response.json();
         setGames(data);
@@ -37,7 +71,7 @@ const App: React.FC = () => {
   // Fetch featured games from backend
   const fetchFeaturedGamesFromBackend = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/games/featured?limit=5`);
+      const response = await authenticatedFetch(`${BACKEND_URL}/games/featured?limit=5`);
       if (response.ok) {
         const data = await response.json();
         setFeaturedGames(data);
@@ -50,13 +84,13 @@ const App: React.FC = () => {
   // Fetch leaderboard games from backend
   const fetchLeaderboardFromBackend = async () => {
     try {
-      const playsResponse = await fetch(`${BACKEND_URL}/games/leaderboard?limit=5&sort_by=plays`);
+      const playsResponse = await authenticatedFetch(`${BACKEND_URL}/games/leaderboard?limit=5&sort_by=plays`);
       if (playsResponse.ok) {
         const data = await playsResponse.json();
         setLeaderboardGames(data);
       }
 
-      const weeklyResponse = await fetch(`${BACKEND_URL}/games/leaderboard?limit=5&sort_by=weeklyPlays`);
+      const weeklyResponse = await authenticatedFetch(`${BACKEND_URL}/games/leaderboard?limit=5&sort_by=weeklyPlays`);
       if (weeklyResponse.ok) {
         const data = await weeklyResponse.json();
         setWeeklyLeaderboardGames(data);
@@ -69,7 +103,7 @@ const App: React.FC = () => {
   // Fetch genres from backend
   const fetchGenresFromBackend = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/games/genres`);
+      const response = await authenticatedFetch(`${BACKEND_URL}/games/genres`);
       if (response.ok) {
         const data = await response.json();
         setGenres(data);
@@ -82,7 +116,7 @@ const App: React.FC = () => {
   // Fetch user profile from backend
   const fetchUserFromBackend = async (userId: string) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/users/${userId}`);
+      const response = await authenticatedFetch(`${BACKEND_URL}/users/${userId}`);
       if (response.ok) {
         const profile = await response.json();
         setUser(profile);
@@ -154,7 +188,7 @@ const App: React.FC = () => {
     setUser(newUser);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/users/${user.id}`, {
+      const response = await authenticatedFetch(`${BACKEND_URL}/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +245,7 @@ const App: React.FC = () => {
     setUser({ ...user, library: newLibrary });
 
     try {
-      const response = await fetch(`${BACKEND_URL}/users/${user.id}`, {
+      const response = await authenticatedFetch(`${BACKEND_URL}/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +260,11 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  const rewardUser = useCallback((amount: number, type: 'vibe' | 'arcade' = 'vibe') => {
+  const rewardUser = useCallback(async (amount: number, type: 'vibe' | 'arcade' = 'arcade') => {
+    if (!user) return;
+
+    // 1. Optimistic Update
+    const previousUser = { ...user };
     setUser(prevUser => {
       if (!prevUser) return null;
       return {
@@ -236,7 +274,24 @@ const App: React.FC = () => {
         gamesPlayed: (prevUser.gamesPlayed || 0) + 1
       };
     });
-  }, []);
+
+    try {
+      // 2. Persist to backend
+      const response = await authenticatedFetch(`${BACKEND_URL}/users/${user.id}/reward`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, type })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to persist reward');
+        setUser(previousUser);
+      }
+    } catch (error) {
+      console.error('Error rewarding user:', error);
+      setUser(previousUser);
+    }
+  }, [user]);
 
   const updateQuestProgress = useCallback((category: Quest['category'], amount: number) => {
     setUser(prevUser => {
@@ -262,27 +317,6 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // Guard for registered users
-  const ProtectedRoute = ({ children, requireCreator = false }: { children: React.ReactNode, requireCreator?: boolean }) => {
-    if (isAuthLoading && !user) return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
-      </div>
-    );
-
-    if (!user) return <Login onLogin={setUser} />;
-    if (requireCreator && user.role !== 'Creator') {
-      return (
-        <div className="p-20 text-center">
-          <h1 className="text-2xl font-bold text-white mb-4 uppercase font-orbitron">Access Denied</h1>
-          <p className="text-slate-400">Only creators can access the data dashboard.</p>
-          <Link to="/" className="inline-block mt-8 px-6 py-3 bg-cyan-500 text-slate-950 font-bold rounded-xl">Go Home</Link>
-        </div>
-      );
-    }
-    return <>{children}</>;
-  };
-
   return (
     <Router>
       <div className="flex min-h-screen bg-slate-950 text-slate-100 font-inter">
@@ -304,12 +338,12 @@ const App: React.FC = () => {
               <Route path="/leaderboards" element={<Leaderboards games={leaderboardGames} weeklyGames={weeklyLeaderboardGames} />} />
               <Route path="/zones" element={<Zones />} />
               <Route path="/challenges" element={
-                <ProtectedRoute requireCreator>
+                <ProtectedRoute isAuthLoading={isAuthLoading} user={user} onLogin={setUser} requireCreator>
                   <Challenges />
                 </ProtectedRoute>
               } />
               <Route path="/launch" element={
-                <ProtectedRoute requireCreator>
+                <ProtectedRoute isAuthLoading={isAuthLoading} user={user} onLogin={setUser} requireCreator>
                   <Launch user={user} games={games} />
                 </ProtectedRoute>
               } />
@@ -320,19 +354,19 @@ const App: React.FC = () => {
               } />
 
               <Route path="/raffles" element={
-                <ProtectedRoute>
+                <ProtectedRoute isAuthLoading={isAuthLoading} user={user} onLogin={setUser}>
                   <Raffles user={user} setUser={setUser} />
                 </ProtectedRoute>
               } />
 
               <Route path="/dashboard" element={
-                <ProtectedRoute requireCreator>
+                <ProtectedRoute isAuthLoading={isAuthLoading} user={user} onLogin={setUser} requireCreator>
                   <Dashboard user={user} games={games} />
                 </ProtectedRoute>
               } />
 
               <Route path="/profile" element={
-                <ProtectedRoute>
+                <ProtectedRoute isAuthLoading={isAuthLoading} user={user} onLogin={setUser}>
                   <Profile user={user} games={games} onUpdateProfile={handleUpdateProfile} />
                 </ProtectedRoute>
               } />

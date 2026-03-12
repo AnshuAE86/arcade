@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { User, GameGenre, Game } from '../types';
-import { 
-  CloudArrowUpIcon, 
+import {
+  CloudArrowUpIcon,
   InformationCircleIcon,
   LinkIcon,
   PhotoIcon,
@@ -34,7 +34,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState<'selection' | 'upload' | 'ai-forge' | 'tingz-beta'>('selection');
-  
+
   // General Form State
   const [pitch, setPitch] = useState("");
   const [title, setTitle] = useState("");
@@ -42,8 +42,8 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
   const [genre, setGenre] = useState<GameGenre>(GameGenre.ACTION);
   const [tags, setTags] = useState("");
   const [thumbnail, setThumbnail] = useState<string>("");
-  const [gameUrl, setGameUrl] = useState(""); 
-  
+  const [gameUrl, setGameUrl] = useState("");
+
   // Asset Management State
   const [assets, setAssets] = useState({
     player: "",
@@ -60,7 +60,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
   // Loading States
   const [isLoading, setIsLoading] = useState(false);
   const [isImgLoading, setIsImgLoading] = useState(false);
-  
+
   // Forge Specific State
   const [isForging, setIsForging] = useState(false);
   const [forgeStatus, setForgeStatus] = useState("");
@@ -77,7 +77,6 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     setMode('selection');
   }, [location.key]);
 
-  // --- ASSET HELPERS ---
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: keyof typeof assets) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -104,7 +103,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           imageConfig: { aspectRatio: type === 'background' ? "16:9" : "1:1" }
         }
       });
-      
+
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           setAssets(prev => ({ ...prev, [type]: `data:image/png;base64,${part.inlineData.data}` }));
@@ -118,8 +117,6 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
       setLoadingAsset(null);
     }
   };
-
-  // --- END ASSET HELPERS ---
 
   const generateMetadata = async () => {
     if (!pitch) return;
@@ -143,7 +140,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           }
         }
       });
-      
+
       const data = JSON.parse(response.text || "{}");
       setTitle(data.title || "");
       setDescription(data.description || "");
@@ -166,7 +163,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
 
     try {
       const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-      
+
       // 1. Generate Metadata
       setForgeStatus("Synthesizing Concept...");
       const metaResponse = await ai.models.generateContent({
@@ -186,7 +183,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           }
         }
       });
-      
+
       const metaData = JSON.parse(metaResponse.text || "{}");
       setTitle(metaData.title || "");
       setDescription(metaData.description || "");
@@ -195,14 +192,14 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
       if (metaData.recommendedGenre) {
         const found = Object.values(GameGenre).find(g => g.toLowerCase().includes(metaData.recommendedGenre.toLowerCase()));
         if (found) {
-            setGenre(found);
-            detectedGenre = found;
+          setGenre(found);
+          detectedGenre = found;
         }
       }
 
       // 2. Generate Game Code with Assets
       setForgeStatus("Compiling Game Engine (HTML5/Canvas)...");
-      
+
       let assetInjection = "";
       if (assets.player || assets.enemy || assets.background) {
         assetInjection = `
@@ -243,17 +240,17 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
         
         Output strictly the HTML code. Do not wrap in markdown code blocks.`,
       });
-      
+
       let code = codeResponse.text || "";
       code = code.replace(/```html/g, '').replace(/```/g, '');
-      
+
       // Inject Assets
       if (assets.player) code = code.split('__PLAYER_ASSET__').join(assets.player);
       if (assets.enemy) code = code.split('__ENEMY_ASSET__').join(assets.enemy);
       if (assets.background) code = code.split('__BG_ASSET__').join(assets.background);
 
       setGeneratedCode(code);
-      
+
       const blob = new Blob([code], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       setGameUrl(url);
@@ -269,7 +266,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           imageConfig: { aspectRatio: "16:9" }
         }
       });
-      
+
       for (const part of imageResponse.candidates[0].content.parts) {
         if (part.inlineData) {
           setThumbnail(`data:image/png;base64,${part.inlineData.data}`);
@@ -321,16 +318,16 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
 
       let newCode = response.text || "";
       newCode = newCode.replace(/```html/g, '').replace(/```/g, '');
-      
+
       // Re-Inject Assets
       if (assets.player) newCode = newCode.split('__PLAYER_ASSET__').join(assets.player);
       if (assets.enemy) newCode = newCode.split('__ENEMY_ASSET__').join(assets.enemy);
       if (assets.background) newCode = newCode.split('__BG_ASSET__').join(assets.background);
-      
+
       setGeneratedCode(newCode);
       const blob = new Blob([newCode], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      setGameUrl(url); 
+      setGameUrl(url);
       setRefinePrompt("");
       alert("Game updated successfully!");
 
@@ -356,7 +353,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           imageConfig: { aspectRatio: "16:9" }
         }
       });
-      
+
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
           setThumbnail(`data:image/png;base64,${part.inlineData.data}`);
@@ -373,7 +370,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
   const generateBetaLogic = async () => {
     if (!betaPrompt) return;
     setIsGeneratingLogic(true);
-    
+
     // Call External Webhook as requested
     try {
       await fetch("https://athena-automation.app.n8n.cloud/webhook/VAIBE", {
@@ -413,7 +410,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
       alert("Please provide at least a title and generate a thumbnail.");
       return;
     }
-    
+
     const finalUrl = gameUrl || "https://www.crazygames.com/embed/polytrack"; // Fallback/Placeholder
 
     const newGame: Game = {
@@ -426,6 +423,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
       weeklyPlays: 0,
       rating: 5.0,
       creator: user?.name || "Guest",
+      creatorId: user?.id || "",
       iframeUrl: finalUrl,
       tags: tags.split(",").map(t => t.trim()),
       createdAt: new Date().toISOString(),
@@ -464,7 +462,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Traditional Upload */}
-          <button 
+          <button
             onClick={() => setMode('upload')}
             className="group relative p-8 rounded-[40px] bg-slate-900 border border-slate-800 hover:border-cyan-500/50 transition-all text-left space-y-5 overflow-hidden flex flex-col justify-between"
           >
@@ -486,7 +484,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           </button>
 
           {/* Tingz Game Forge - UPDATED */}
-          <button 
+          <button
             onClick={() => setMode('ai-forge')}
             className="group relative p-8 rounded-[40px] bg-slate-900 border border-slate-800 hover:border-fuchsia-500/50 transition-all text-left space-y-5 overflow-hidden flex flex-col justify-between"
           >
@@ -511,7 +509,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           </button>
 
           {/* Tingz BETA */}
-          <button 
+          <button
             onClick={() => setMode('tingz-beta')}
             className="group relative p-8 rounded-[40px] bg-slate-950 border border-emerald-500/20 hover:border-emerald-500/50 transition-all text-left space-y-5 overflow-hidden flex flex-col justify-between shadow-[0_0_20px_rgba(16,185,129,0.05)]"
           >
@@ -544,7 +542,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
     return (
       <div className="max-w-6xl mx-auto space-y-10">
         <div className="flex items-center justify-between">
-          <button 
+          <button
             onClick={() => setMode('selection')}
             className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-black uppercase tracking-widest"
           >
@@ -573,13 +571,13 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
                 <h2 className="text-xl font-black font-orbitron uppercase">PROMPT FORGE</h2>
               </div>
               <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Mechanic Description</p>
-              <textarea 
+              <textarea
                 value={betaPrompt}
                 onChange={(e) => setBetaPrompt(e.target.value)}
                 placeholder="e.g. A gravity-shifting combat system where players use sound frequency to deflect projectiles..."
                 className="w-full h-40 bg-slate-950 border border-slate-800 rounded-3xl p-6 text-sm text-slate-300 focus:ring-1 focus:ring-emerald-500/50 outline-none resize-none"
               />
-              <button 
+              <button
                 onClick={generateBetaLogic}
                 disabled={isGeneratingLogic || !betaPrompt}
                 className="w-full py-4 bg-emerald-500 text-slate-950 font-black rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 uppercase text-xs tracking-widest disabled:opacity-50"
@@ -633,7 +631,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-10">
       <div className="flex items-center justify-between">
-        <button 
+        <button
           onClick={() => setMode('selection')}
           className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-black uppercase tracking-widest"
         >
@@ -650,8 +648,8 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           {mode === 'upload' ? 'Submit Game Build' : 'Forge AI Studio'}
         </h1>
         <p className="text-slate-400">
-          {mode === 'upload' 
-            ? 'Complete the form below to register your finished game in the Arcade catalog.' 
+          {mode === 'upload'
+            ? 'Complete the form below to register your finished game in the Arcade catalog.'
             : 'Turn your idea into a playable game instantly using our Neural Forge engine.'}
         </p>
       </div>
@@ -659,39 +657,39 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
       {/* FORGE AI WORKFLOW */}
       {mode === 'ai-forge' && (
         <section className="bg-slate-900 border-2 border-fuchsia-500/30 p-8 rounded-3xl space-y-8 shadow-[0_0_30px_rgba(217,70,239,0.05)]">
-          
+
           {/* Step 1: Ideation & Generation */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <SparklesIcon className="w-6 h-6 text-fuchsia-400" />
               <h2 className="text-xl font-black font-orbitron uppercase tracking-tighter">1. Concept Forge</h2>
             </div>
-            <textarea 
+            <textarea
               value={pitch}
               onChange={(e) => setPitch(e.target.value)}
               placeholder="Describe your game idea in detail... e.g. 'A physics-based climber where you control a magnetic robot in a junkyard. The goal is to reach the top before the magnet battery runs out.'"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl py-4 px-6 focus:ring-2 focus:ring-fuchsia-500/20 focus:outline-none transition-all resize-none min-h-[100px] text-slate-200"
             />
-            
+
             {/* ASSET MANAGER */}
             <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 space-y-6">
               <div className="flex items-center gap-2 mb-2">
                 <PaintBrushIcon className="w-5 h-5 text-fuchsia-400" />
                 <h3 className="text-sm font-black font-orbitron uppercase tracking-widest">Visual Assets (Optional)</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {(['player', 'enemy', 'background'] as const).map((type) => (
                   <div key={type} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{type} Sprite</label>
                       {assets[type] && (
-                        <button onClick={() => setAssets(prev => ({...prev, [type]: ''}))} className="text-slate-500 hover:text-red-400">
+                        <button onClick={() => setAssets(prev => ({ ...prev, [type]: '' }))} className="text-slate-500 hover:text-red-400">
                           <CloseIcon className="w-3 h-3" />
                         </button>
                       )}
                     </div>
-                    
+
                     <div className="aspect-square bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative group">
                       {assets[type] ? (
                         <img src={assets[type]} alt={type} className="w-full h-full object-cover" />
@@ -705,27 +703,27 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
                           <span className="text-[9px] uppercase font-bold">No Asset</span>
                         </div>
                       )}
-                      
+
                       {/* Hover Actions */}
                       <div className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                         <label className="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold uppercase w-full text-center border border-slate-700 text-slate-300">
-                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, type)} />
-                           Upload
-                         </label>
-                         <button 
-                           onClick={() => generateGameAsset(type)}
-                           disabled={loadingAsset === type}
-                           className="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 rounded-lg text-[10px] font-bold uppercase w-full text-center text-white"
-                         >
-                           Generate AI
-                         </button>
+                        <label className="cursor-pointer px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold uppercase w-full text-center border border-slate-700 text-slate-300">
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, type)} />
+                          Upload
+                        </label>
+                        <button
+                          onClick={() => generateGameAsset(type)}
+                          disabled={loadingAsset === type}
+                          className="px-3 py-1.5 bg-fuchsia-600 hover:bg-fuchsia-500 rounded-lg text-[10px] font-bold uppercase w-full text-center text-white"
+                        >
+                          Generate AI
+                        </button>
                       </div>
                     </div>
 
-                    <input 
+                    <input
                       type="text"
                       value={assetPrompts[type]}
-                      onChange={(e) => setAssetPrompts(prev => ({...prev, [type]: e.target.value}))}
+                      onChange={(e) => setAssetPrompts(prev => ({ ...prev, [type]: e.target.value }))}
                       placeholder={`Describe ${type}...`}
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-fuchsia-500/50"
                     />
@@ -734,7 +732,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
               </div>
             </div>
 
-            <button 
+            <button
               type="button"
               onClick={startForgeProcess}
               disabled={isForging || !pitch}
@@ -748,83 +746,83 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
           {/* Step 2: Handoff / Result */}
           {gameUrl && (
             <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-               <div className="h-px bg-slate-800 w-full"></div>
-               
-               <div className="space-y-4">
-                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CpuChipIcon className="w-6 h-6 text-fuchsia-400" />
-                      <h2 className="text-xl font-black font-orbitron uppercase tracking-tighter">2. Game Generated</h2>
-                    </div>
-                    <span className="text-xs text-green-400 font-bold uppercase flex items-center gap-1">
-                      <CheckIcon className="w-4 h-4" /> Ready to Play
-                    </span>
-                 </div>
-                 
-                 <div className="flex flex-col sm:flex-row gap-4">
-                   <a 
-                     href={gameUrl} 
-                     target="_blank" 
-                     rel="noreferrer"
-                     className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-fuchsia-500/10 border border-fuchsia-500 text-fuchsia-400 hover:bg-fuchsia-500 hover:text-white rounded-2xl font-black transition-all uppercase text-xs tracking-widest group"
-                   >
-                     Preview Game <PlayIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                   </a>
-                   <div className="flex-1 space-y-2">
-                     <div className="relative">
-                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                        <input 
-                          type="text" 
-                          value={gameUrl}
-                          readOnly
-                          className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-10 pr-4 text-sm focus:ring-1 focus:ring-fuchsia-500/50 outline-none text-slate-400"
-                        />
-                     </div>
-                   </div>
-                 </div>
-                 <p className="text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest">
-                   Note: This generated URL is temporary. Publish below to save it to the catalog.
-                 </p>
+              <div className="h-px bg-slate-800 w-full"></div>
 
-                 {/* REFINEMENT SECTION */}
-                 <div className="mt-6 p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2">
-                        <SparklesIcon className="w-5 h-5 text-fuchsia-400" />
-                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Iterate & Polish</h3>
-                    </div>
-                    <div className="flex gap-2">
-                        <input 
-                            type="text" 
-                            value={refinePrompt}
-                            onChange={(e) => setRefinePrompt(e.target.value)}
-                            placeholder="e.g. Make the player move faster, change background to blue..."
-                            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-fuchsia-500/50 outline-none text-slate-200 placeholder-slate-600"
-                            onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
-                        />
-                        <button 
-                            onClick={handleRefine}
-                            disabled={isRefining || !refinePrompt}
-                            className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {isRefining ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <WrenchScrewdriverIcon className="w-4 h-4" />}
-                            {isRefining ? "Refining..." : "Update"}
-                        </button>
-                    </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CpuChipIcon className="w-6 h-6 text-fuchsia-400" />
+                    <h2 className="text-xl font-black font-orbitron uppercase tracking-tighter">2. Game Generated</h2>
+                  </div>
+                  <span className="text-xs text-green-400 font-bold uppercase flex items-center gap-1">
+                    <CheckIcon className="w-4 h-4" /> Ready to Play
+                  </span>
                 </div>
 
-               </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <a
+                    href={gameUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-fuchsia-500/10 border border-fuchsia-500 text-fuchsia-400 hover:bg-fuchsia-500 hover:text-white rounded-2xl font-black transition-all uppercase text-xs tracking-widest group"
+                  >
+                    Preview Game <PlayIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                  <div className="flex-1 space-y-2">
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type="text"
+                        value={gameUrl}
+                        readOnly
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-10 pr-4 text-sm focus:ring-1 focus:ring-fuchsia-500/50 outline-none text-slate-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest">
+                  Note: This generated URL is temporary. Publish below to save it to the catalog.
+                </p>
+
+                {/* REFINEMENT SECTION */}
+                <div className="mt-6 p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-2">
+                    <SparklesIcon className="w-5 h-5 text-fuchsia-400" />
+                    <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Iterate & Polish</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={refinePrompt}
+                      onChange={(e) => setRefinePrompt(e.target.value)}
+                      placeholder="e.g. Make the player move faster, change background to blue..."
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-fuchsia-500/50 outline-none text-slate-200 placeholder-slate-600"
+                      onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
+                    />
+                    <button
+                      onClick={handleRefine}
+                      disabled={isRefining || !refinePrompt}
+                      className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isRefining ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <WrenchScrewdriverIcon className="w-4 h-4" />}
+                      {isRefining ? "Refining..." : "Update"}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
             </div>
           )}
         </section>
       )}
 
       {mode === 'upload' && (
-         <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex items-center gap-4">
-            <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20">
-              <InformationCircleIcon className="w-6 h-6 text-cyan-400" />
-            </div>
-            <p className="text-sm text-slate-400">Provide an iframe URL for your hosted game or a direct link to your WebGL build folder.</p>
-         </div>
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex items-center gap-4">
+          <div className="bg-cyan-500/10 p-3 rounded-xl border border-cyan-500/20">
+            <InformationCircleIcon className="w-6 h-6 text-cyan-400" />
+          </div>
+          <p className="text-sm text-slate-400">Provide an iframe URL for your hosted game or a direct link to your WebGL build folder.</p>
+        </div>
       )}
 
       {/* METADATA FORM (Shared) */}
@@ -832,27 +830,27 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
         <div className="md:col-span-2 space-y-8">
           <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 space-y-6">
             <div className="flex items-center justify-between">
-               <h3 className="text-sm font-black text-slate-300 uppercase tracking-widest">Catalog Metadata</h3>
-               {mode === 'ai-forge' && (
-                 <button onClick={generateMetadata} disabled={isLoading} className="text-xs text-fuchsia-400 hover:text-fuchsia-300 font-bold uppercase flex items-center gap-1">
-                   <ArrowPathIcon className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} /> Regenerate
-                 </button>
-               )}
+              <h3 className="text-sm font-black text-slate-300 uppercase tracking-widest">Catalog Metadata</h3>
+              {mode === 'ai-forge' && (
+                <button onClick={generateMetadata} disabled={isLoading} className="text-xs text-fuchsia-400 hover:text-fuchsia-300 font-bold uppercase flex items-center gap-1">
+                  <ArrowPathIcon className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} /> Regenerate
+                </button>
+              )}
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Game Title</label>
-              <input 
+              <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                type="text" 
+                type="text"
                 placeholder="e.g. Neon Drift 3000"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-1 focus:ring-cyan-500/50 focus:outline-none transition-all"
               />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Description</label>
-              <textarea 
+              <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
@@ -863,7 +861,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Genre</label>
-                <select 
+                <select
                   value={genre}
                   onChange={(e) => setGenre(e.target.value as GameGenre)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-1 focus:ring-cyan-500/50 transition-all text-sm"
@@ -873,10 +871,10 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Tags</label>
-                <input 
+                <input
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  type="text" 
+                  type="text"
                   placeholder="3D, Fast, Retro..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 focus:ring-1 focus:ring-cyan-500/50 transition-all"
                 />
@@ -887,8 +885,8 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Iframe URL</label>
                 <div className="relative">
                   <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     value={gameUrl}
                     onChange={(e) => setGameUrl(e.target.value)}
                     placeholder="https://example.com/your-game"
@@ -916,7 +914,7 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
               )}
             </div>
             {/* Thumbnail Generator Button */}
-            <button 
+            <button
               onClick={generateThumbnail}
               disabled={!title}
               className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-700 flex items-center justify-center gap-2 disabled:opacity-50"
@@ -925,18 +923,17 @@ export const CreatorZone: React.FC<CreatorZoneProps> = ({ user, onUpload }) => {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={handleSubmit}
-            className={`w-full py-5 text-white font-black rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 group ${
-              mode === 'ai-forge' 
-                ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 shadow-fuchsia-500/20' 
-                : 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 shadow-cyan-500/20'
-            }`}
+            className={`w-full py-5 text-white font-black rounded-3xl shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 group ${mode === 'ai-forge'
+              ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 shadow-fuchsia-500/20'
+              : 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 shadow-cyan-500/20'
+              }`}
           >
             <RocketLaunchIcon className="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             {mode === 'upload' ? 'PUBLISH BUILD' : 'PUBLISH'}
           </button>
-          
+
           <p className="text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest px-4">
             By publishing, you agree to the Creator Revenue Share Program and Content Guidelines.
           </p>

@@ -1,11 +1,11 @@
 import React from 'react';
 import { MOCK_ANALYTICS } from '../constants';
 import { User, Game } from '../types';
-import { 
-  ChartBarIcon, 
-  UsersIcon, 
-  ClockIcon, 
-  ArrowTrendingUpIcon, 
+import {
+  ChartBarIcon,
+  UsersIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
   DevicePhoneMobileIcon,
   GlobeAltIcon,
   UserGroupIcon,
@@ -21,7 +21,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, games }) => {
-  const creatorGames = games.filter(g => g.creator === user.name || g.creator === 'Mock Creator');
+  const creatorGames = games.filter(g => g.creatorId === user.id);
   const data = MOCK_ANALYTICS;
 
   // Mock delta data (monthly changes)
@@ -65,7 +65,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, games }) => {
           <p className="text-slate-400">Analytics for <span className="text-cyan-400 font-bold">{user.name}</span></p>
         </div>
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={exportToCSV}
             className="flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl border border-slate-700 transition-all"
           >
